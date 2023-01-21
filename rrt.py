@@ -46,7 +46,7 @@ class RRT:
                 if show_map:
                     self.visulize_tree(x_new,x_nearest)
                 if self.goal_reached(x_new):
-                    pygame.draw.circle(self.map,(255,0,0),self.goal.data["V"],radius =4,width=4)
+                    pygame.draw.circle(self.map,(255,0,0),self.goal.data["V"],radius =5,width=5)
                     pygame.display.update()
                     return self.tree
 
@@ -142,7 +142,7 @@ if __name__=="__main__":
     
     #draw star and goal points
     x_star=(100,20)
-    x_goal=(500,450)
+    x_goal=(400,500)
     pygame.draw.circle(map,(0,0,255),center=x_star,radius=5,width=5)
     pygame.draw.circle(map,(0,0,255),center=x_goal,radius=5,width=5)
 
@@ -160,7 +160,7 @@ if __name__=="__main__":
     # Initializing RTT
     rrt = RRT(map=map,x_star=x_star,x_goal=x_goal,step_size=10,goal_threshold=7, obstacles_color=obstacle_color)
     #Build RRT
-    rrt.build_rrt(10000)
+    rrt.build_rrt(int(1e6))
     input('Press ENTER to exit')
     
     
