@@ -6,6 +6,7 @@ class Node:
         self.children = []
         self.cost = None
         self.parent = None
+        self.goal_reached = False
 
     def add_child(self,child_x):
         child_x.parent = self
@@ -16,3 +17,4 @@ class Node:
     
     def add_cost(self,cost):
         self.cost = cost    
+        

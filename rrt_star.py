@@ -3,24 +3,20 @@ import matplotlib.pyplot as plt
 from random import randint
 import pygame
 from utils import *
-from node import Node
+from tree import Node
+from rrt import RRT
 
 
-class RRTStar:
-    def __init__(self, map, q_star, q_goal, step_size = 10,goal_threshold=8, obstacles_color= (0,255,0,255),goal_color = (0,0,255,255)):
+class RRTStar(RRT):
+    def __init__(self, map, q_star, q_goal, step_size = 10,goal_threshold=8,rewire_radius = 8, obstacles_color= (0,255,0,255)):
         """ 
             q_star = (x,y)
             q_goal = (x,y)
         
         """
-        self.map = map
-        self.tree = Node(q = q_star)
+        super().__init__(map, q_star, q_goal, step_size,goal_threshold, obstacles_color)
         self.tree.add_cost(0)
-        self.goal =  q_goal
-        self.step_size = step_size
-        self.goal_threshold = goal_threshold
-        self.obstacles_color = obstacles_color
-        self.goal_color = goal_color
+        self.rewire_radius = rewire_radius
 
     def build_rrt(self,steps):
         goal_reached = False
@@ -30,7 +26,7 @@ class RRTStar:
             q_new = self.steer(x_nearest.q,q_rand)
             if self.is_collision_free(line(x_nearest.q,q_new)): 
                 # find list of x nodes that lie in the circle centerd at q_new
-                X_near = near(self.tree,q_new,20)     
+                X_near = self.near(self.tree,q_new,self.rewire_radius)     
                 
                  #connect x_new node to the near x node that result in a minimum-cost path
                 x_new = Node(q = q_new)
@@ -50,16 +46,16 @@ class RRTStar:
                     goal_reached = True
                 
                 #visulize the updated tree
-                draw_branch(self.map,x_min.q,q_new)
+                draw_branch(self.map,x_min.q,x_new.q)
                         
                 #rewrite the tree 
                 for x_near in X_near:
-                    if self.is_collision_free(line(q_new,x_near.q)):
-                        if cost(x_new) + c(line(q_new,x_near.q)) < cost(x_near):
+                    if self.is_collision_free(line(x_new.q,x_near.q)):
+                        if cost(x_new) + c(line(x_new.q,x_near.q)) < cost(x_near):
                             x_parent = parent(x_near)
                             x_parent.remove_child(x_near)
                             x_new.add_child(x_near)
-                            x_near.add_cost(cost(x_new) + c(line(q_new,x_near.q)))
+                            x_near.add_cost(cost(x_new) + c(line(x_new.q,x_near.q)))
                 
                             #check if goal reached
                             if is_goal_reached(line(x_new.q,x_near.q),self.goal,self.goal_threshold):
@@ -73,61 +69,31 @@ class RRTStar:
                 if goal_reached:
                     pygame.draw.circle(self.map,(255,0,0),self.goal,radius =5,width=5)
                     pygame.display.update()
+                    self.draw_path(x_new,width=3)
+
                     return self.tree
 
-
-    def sample_free(self):
-        q_rand = (randint(1,self.map.get_width()-1),randint(1,self.map.get_height()-1))
-        if self.is_point_collision_free(q_rand):
-            return q_rand
-        else:
-            return self.sample_free()
-
-    def nearest(self,x,q_rand,e_dist = np.inf,x_nearest_prev=None):
-        x_nearest = None
-        min_dist = None
-        if x is not None:
-            temp_dist = ecludian(x.q,q_rand)
-            if temp_dist < e_dist:
-                min_dist = temp_dist
-                x_nearest = x
-            else:
-                x_nearest = x_nearest_prev
-                min_dist = e_dist
-                    
-            for x_ in x.children:
-                min_dist, x_nearest = self.nearest(x_,q_rand,min_dist,x_nearest)
-        return min_dist,x_nearest
-             
-
     
-    def steer(self, q_nearest, q_rand):
-        step = self.step_size
-        if ecludian(q_nearest,q_rand) < self.step_size :
-            return q_rand
-        else:
-            x1,y1 = q_nearest
-            x2,y2 = q_rand
-            a = (y2-y1)/(x2-x1+np.finfo(np.float32).eps)
-            x3 = (step**2/(a**2 +1))**0.5 + x1
-            y3 =  a * ((step**2/(a**2 +1))**0.5) + y1
-        
-        return (round(x3),round(y3))
+    def near(self,x,q,r):
+        """
+        returns list of nodes lie in the cirlce centered at q with raduis r
 
-    def is_collision_free(self,line):
-        if self.is_point_collision_free(line[-1]) and self.is_point_collision_free(line[0]):
-            for q in line:
-                if self.map.get_at(q) == self.obstacles_color:
-                    return False
-            return True
-        return False
-    
-    def is_point_collision_free(self,q):
-        x, y = q
-        if (x>0 and y>0) and x < self.map.get_width() and y < self.map.get_height():
-            if self.map.get_at(q) != self.obstacles_color:
-                return True
-        return False
+        Args:
+            x (Node): root node
+            q (Typle): (x,y) circle center
+            r (Int): circle raduis
+
+        Returns:
+            Xnear: list of near nodes
+        """
+        X_near = []
+        dist = ecludian(x.q,q)
+        if(dist < r):
+            X_near.append(x)
+        for x_ in x.children:
+            X_near.extend(self.near(x_,q,r))
+            
+        return X_near
         
         
         
@@ -164,7 +130,7 @@ if __name__=="__main__":
 
 
     # Initializing RTT
-    rrt = RRTStar(map=map,q_star=q_star,q_goal=q_goal,step_size=25,goal_threshold=7, obstacles_color=obstacle_color,goal_color = goal_color)
+    rrt = RRTStar(map=map,q_star=q_star,q_goal=q_goal,step_size=25,goal_threshold=7, obstacles_color=obstacle_color)
     #Build RRT
     rrt.build_rrt(int(1e6))
     input('Press ENTER to exit')

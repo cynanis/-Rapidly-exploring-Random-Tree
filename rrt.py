@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 from random import randint
 import pygame
 from utils import *
-from node import Node
+from tree import Node
 
 class RRT:
-    def __init__(self, map, q_star, q_goal, step_size = 10,goal_threshold=8, obstacles_color= (0,255,0,255),goal_color = (0,0,255,255)):
+    def __init__(self, map, q_star, q_goal, step_size = 10,goal_threshold=8, obstacles_color= (0,255,0,255)):
         """ 
             q_star = (x,y)
             q_goal = (x,y)
@@ -18,7 +18,6 @@ class RRT:
         self.step_size = step_size
         self.goal_threshold = goal_threshold
         self.obstacles_color = obstacles_color
-        self.goal_color = goal_color
 
     def build_rrt(self,steps):
         for i in range(steps):
@@ -28,11 +27,12 @@ class RRT:
             if self.is_collision_free(line(x_nearest.q, q_new)): 
                 x_new = Node(q_new)
                 x_nearest.add_child(x_new)
-            
                 draw_branch(self.map,x_nearest.q,x_new.q)
+                
                 if is_goal_reached(line(x_nearest.q,x_new.q),self.goal,self.goal_threshold):
                     pygame.draw.circle(self.map,(255,0,0),self.goal,radius =self.goal_threshold,width=self.goal_threshold)
                     pygame.display.update()
+                    self.draw_path(x_new,width=3)
                     return self.tree
 
 
@@ -91,7 +91,11 @@ class RRT:
                 return True
         return False
         
-
+    def draw_path(self,x_goal,color=(255,0,0),width=2):
+        if x_goal == None or x_goal.parent == None:
+            return
+        draw_branch(self.map,x_goal.q,x_goal.parent.q,color=color,width =width)
+        self.draw_path(x_goal.parent,color)
         
         
         
@@ -129,7 +133,7 @@ if __name__=="__main__":
 
 
     # Initializing RTT
-    rrt = RRT(map=map,q_star=q_star,q_goal=q_goal,step_size=25,goal_threshold=7, obstacles_color=obstacle_color,goal_color = goal_color)
+    rrt = RRT(map=map,q_star=q_star,q_goal=q_goal,step_size=25,goal_threshold=7, obstacles_color=obstacle_color)
     #Build RRT
     rrt.build_rrt(int(1e6))
     input('Press ENTER to exit')
