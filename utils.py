@@ -1,4 +1,4 @@
-
+import pygame
 
 
 def line(x1, x2):
@@ -34,7 +34,52 @@ def cost(v):
 def c(line):
     return ecludian(line[0],line[-1])
 
-def ecludian(x_n, x_r):
-    x1 , y1 = x_n
-    x2, y2 = x_r
+def ecludian(q_n, q_r):
+    x1 , y1 = q_n
+    x2, y2 = q_r
     return ((x2-x1)**2 + (y2 - y1)**2)**0.5
+
+def near(x,q,r):
+    """
+    returns list of nodes lie in the cirlce centered at q with raduis r
+
+    Args:
+        x (Node): root node
+        q (Typle): (x,y) circle center
+        r (Int): circle raduis
+
+    Returns:
+        Xnear: list of near nodes
+    """
+    list = []
+    dist = ecludian(x.q,q)
+    if(dist < r):
+        list.append(x)
+    for x_ in x.children:
+        list.extend(near(x_,q,r))
+    return list
+
+
+def is_goal_reached(line,q_goal,goal_threshold):
+
+    for q in reversed(line):
+        if ecludian(q,q_goal) < goal_threshold:
+            return True
+    return False
+
+
+def draw_branch(map,q_start, q_end,color = (0,0,0)):
+    # Drawing line
+    pygame.draw.circle(map,color,center=q_end,radius=2,width=2)
+    pygame.draw.line(map,color,start_pos=q_start,end_pos=q_end,width=1)
+    pygame.display.update() 
+
+def delete_branch(map,q_start, q_end,color = (255,255,255)):
+    # delete line
+    pygame.draw.line(map,color,start_pos=q_start,end_pos=q_end,width=1)
+    pygame.display.update() 
+
+def draw_point(map,q_point,color = (0,0,0)):
+    # Drawing point
+    pygame.draw.circle(map,color,center=q_point,radius = 1,width=1)
+    pygame.display.update() 

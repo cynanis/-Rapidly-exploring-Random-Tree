@@ -3,27 +3,10 @@ import matplotlib.pyplot as plt
 from random import randint
 import pygame
 from utils import *
+from node import Node
 
-class Node:
 
-    def __init__(self,q):
-        """ q = (x,y) """
-        self.q = q
-        self.children = []
-        self.cost = None
-        self.parent = None
-
-    def add_child(self,child_x):
-        child_x.parent = self
-        self.children.append(child_x)
-    
-    def remove_child(self,child_x):
-        self.children = [child for child in self.children if child is not child_x]
-    
-    def add_cost(self,cost):
-        self.cost = cost    
-
-class RRT:
+class RRTStar:
     def __init__(self, map, q_star, q_goal, step_size = 10,goal_threshold=8, obstacles_color= (0,255,0,255),goal_color = (0,0,255,255)):
         """ 
             q_star = (x,y)
@@ -62,7 +45,7 @@ class RRT:
                 x_new.add_cost(c_min)
 
                 #check if goal reached
-                if self.goal_reached(line(x_min.q,x_new.q)):
+                if is_goal_reached(line(x_min.q,x_new.q),self.goal,self.goal_threshold):
                     print("goal reached")
                     goal_reached = True
                 
@@ -79,7 +62,7 @@ class RRT:
                             x_near.add_cost(cost(x_new) + c(line(q_new,x_near.q)))
                 
                             #check if goal reached
-                            if self.goal_reached(line(x_new.q,x_near.q)):
+                            if is_goal_reached(line(x_new.q,x_near.q),self.goal,self.goal_threshold):
                                 print("goal reached")
                                 goal_reached = True
 
@@ -146,12 +129,6 @@ class RRT:
                 return True
         return False
         
-    def goal_reached(self,line):
-        for q in reversed(line):
-            if self.map.get_at(q) == self.goal_color:
-                return True
-        return False
-        
         
         
 
@@ -187,7 +164,7 @@ if __name__=="__main__":
 
 
     # Initializing RTT
-    rrt = RRT(map=map,q_star=q_star,q_goal=q_goal,step_size=25,goal_threshold=7, obstacles_color=obstacle_color,goal_color = goal_color)
+    rrt = RRTStar(map=map,q_star=q_star,q_goal=q_goal,step_size=25,goal_threshold=7, obstacles_color=obstacle_color,goal_color = goal_color)
     #Build RRT
     rrt.build_rrt(int(1e6))
     input('Press ENTER to exit')
