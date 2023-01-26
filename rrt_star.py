@@ -2,177 +2,155 @@ import numpy as np
 import matplotlib.pyplot as plt
 from random import randint
 import pygame
-from utils import line, cost, parent, c, ecludian
+from utils import *
 
 class Node:
 
-    def __init__(self,data):
-        """ data = (x,y) """
-        self.data = data
+    def __init__(self,q):
+        """ q = (x,y) """
+        self.q = q
         self.children = []
         self.cost = None
         self.parent = None
 
-    def add_child(self,child_node):
-        child_node.parent = self
-        self.children.append(child_node)
+    def add_child(self,child_x):
+        child_x.parent = self
+        self.children.append(child_x)
     
-    def remove_child(self,child_node):
-        self.children = [child for child in self.children if child is not child_node]
+    def remove_child(self,child_x):
+        self.children = [child for child in self.children if child is not child_x]
     
-    def set_cost(self,cost):
+    def add_cost(self,cost):
         self.cost = cost    
 
 class RRT:
-    def __init__(self, map, x_star, x_goal, step_size = 10,goal_threshold=8, obstacles_color= (0,255,0,255)):
+    def __init__(self, map, q_star, q_goal, step_size = 10,goal_threshold=8, obstacles_color= (0,255,0,255),goal_color = (0,0,255,255)):
         """ 
-            x_star = (x,y)
-            x_goal = (x,y)
+            q_star = (x,y)
+            q_goal = (x,y)
         
         """
         self.map = map
-        self.tree = Node(data = x_star)
-        self.goal =  x_goal
+        self.tree = Node(q = q_star)
+        self.tree.add_cost(0)
+        self.goal =  q_goal
         self.step_size = step_size
         self.goal_threshold = goal_threshold
         self.obstacles_color = obstacles_color
+        self.goal_color = goal_color
 
     def build_rrt(self,steps):
+        goal_reached = False
         for i in range(steps):
-            x_rand = self.sample_free()
-            node_nearest, x_nearest = self.nearest(x_rand)
-            x_new = self.steer(x_nearest,x_rand)
-            if self.is_collision_free(line(x_nearest,x_new)): 
-                # find list of nodes that lie in the circle centerd at x_new
-                X_near = self.near(self.tree,x_new,20)     
+            q_rand = self.sample_free()
+            _,x_nearest = self.nearest(self.tree,q_rand)
+            q_new = self.steer(x_nearest.q,q_rand)
+            if self.is_collision_free(line(x_nearest.q,q_new)): 
+                # find list of x nodes that lie in the circle centerd at q_new
+                X_near = near(self.tree,q_new,20)     
                 
-                 #connect x_new to the near node that result in a minimum-cost path
-                node_new = Node(data = x_new)
-                node_new_parent = node_nearest
-                c_min = cost(node_nearest) + c(line(x_nearest,x_new))
-                for node_near in X_near:
-                    if self.is_collision_free(line(node_near.data,x_new)):
-                        if cost(node_near) + c(line(node_near.data,x_new)) < c_min:
-                            node_new_parent = node_near
-                            c_min = cost(node_near) + c(line(node_near.data,x_new))
-                node_new_parent.add_child(node_new)
-                node_new.set_cost(c_min)
+                 #connect x_new node to the near x node that result in a minimum-cost path
+                x_new = Node(q = q_new)
+                x_min = x_nearest
+                c_min = cost(x_nearest) + c(line(x_nearest.q,q_new))
+                for x_near in X_near:
+                    if self.is_collision_free(line(x_near.q,q_new)):
+                        if cost(x_near) + c(line(x_near.q,q_new)) < c_min:
+                            x_min = x_near
+                            c_min = cost(x_near) + c(line(x_near.q,q_new))
+                x_min.add_child(x_new)
+                x_new.add_cost(c_min)
+
+                #check if goal reached
+                if self.goal_reached(line(x_min.q,x_new.q)):
+                    print("goal reached")
+                    goal_reached = True
+                
                 #visulize the updated tree
-                self.visulize_tree(node_new_parent.data,x_new)
-                    
+                draw_branch(self.map,x_min.q,q_new)
+                        
                 #rewrite the tree 
-                for node_near in X_near:
-                    if self.is_collision_free(line(x_new,node_near.data)):
-                        if cost(node_new) + c(line(x_new,node_near.data)) < cost(node_near):
-                            parent_near = parent(node_near)
-                            parent_near.remove_child(node_near)
-                            node_new.add_child(node_near)
-                            node_near.set_cost(cost(node_new) + c(line(x_new,node_near.data)))
-                            #visulize the updated tree
-                            self.visulize_deleted_branch(parent_near.data,node_near.data)
-                            self.visulize_tree(node_new.data,node_near.data)
+                for x_near in X_near:
+                    if self.is_collision_free(line(q_new,x_near.q)):
+                        if cost(x_new) + c(line(q_new,x_near.q)) < cost(x_near):
+                            x_parent = parent(x_near)
+                            x_parent.remove_child(x_near)
+                            x_new.add_child(x_near)
+                            x_near.add_cost(cost(x_new) + c(line(q_new,x_near.q)))
                 
-                if self.goal_reached(x_new):
+                            #check if goal reached
+                            if self.goal_reached(line(x_new.q,x_near.q)):
+                                print("goal reached")
+                                goal_reached = True
+
+                            #visulize the updated tree
+                            delete_branch(self.map,x_parent.q,x_near.q)
+                            draw_branch(self.map,x_new.q,x_near.q)
+
+                if goal_reached:
                     pygame.draw.circle(self.map,(255,0,0),self.goal,radius =5,width=5)
                     pygame.display.update()
                     return self.tree
 
 
-
-
     def sample_free(self):
-        x_rand = (randint(1,self.map.get_width()-1),randint(1,self.map.get_height()-1))
-        if self.is_point_collision_free(x_rand):
-            return x_rand
+        q_rand = (randint(1,self.map.get_width()-1),randint(1,self.map.get_height()-1))
+        if self.is_point_collision_free(q_rand):
+            return q_rand
         else:
             return self.sample_free()
 
-    def nearest(self,x_rand):
-        
-        root = self.tree
-        node_nearest = root
-        ecludian_dist = np.inf
-        if root is not None:
-            ecludian_dist, node_nearest = self.tree_traversal(root,x_rand,ecludian_dist,node_nearest)
-        
-        return node_nearest , node_nearest.data
+    def nearest(self,x,q_rand,e_dist = np.inf,x_nearest_prev=None):
+        x_nearest = None
+        min_dist = None
+        if x is not None:
+            temp_dist = ecludian(x.q,q_rand)
+            if temp_dist < e_dist:
+                min_dist = temp_dist
+                x_nearest = x
+            else:
+                x_nearest = x_nearest_prev
+                min_dist = e_dist
+                    
+            for x_ in x.children:
+                min_dist, x_nearest = self.nearest(x_,q_rand,min_dist,x_nearest)
+        return min_dist,x_nearest
              
 
     
-    def steer(self, x_nearest, x_rand):
+    def steer(self, q_nearest, q_rand):
         step = self.step_size
-        if ecludian(x_n=x_nearest,x_r=x_rand) < self.step_size :
-            return x_rand
+        if ecludian(q_nearest,q_rand) < self.step_size :
+            return q_rand
         else:
-            x1,y1 = x_nearest
-            x2,y2 = x_rand
+            x1,y1 = q_nearest
+            x2,y2 = q_rand
             a = (y2-y1)/(x2-x1+np.finfo(np.float32).eps)
             x3 = (step**2/(a**2 +1))**0.5 + x1
             y3 =  a * ((step**2/(a**2 +1))**0.5) + y1
-
-        return (int(x3),int(y3))
+        
+        return (round(x3),round(y3))
 
     def is_collision_free(self,line):
         if self.is_point_collision_free(line[-1]) and self.is_point_collision_free(line[0]):
-            for x_ in line:
-                if self.map.get_at(x_) == self.obstacles_color:
+            for q in line:
+                if self.map.get_at(q) == self.obstacles_color:
                     return False
             return True
         return False
     
-    def is_point_collision_free(self,x_):
-        x, y = x_
+    def is_point_collision_free(self,q):
+        x, y = q
         if (x>0 and y>0) and x < self.map.get_width() and y < self.map.get_height():
-            if self.map.get_at(x_) != self.obstacles_color:
+            if self.map.get_at(q) != self.obstacles_color:
                 return True
         return False
-    
-    def near(self,node,x,r):
-        list = []
-        dist = ecludian(x,node.data)
-        if(dist < r):
-            list.append(node)
-        for node_ in node.children:
-            list.extend(self.near(node_,x,r))
-        return list
         
-        
-    def goal_reached(self,x_new):
-        if ecludian(x_new,self.goal) < self.goal_threshold:
-            return True
+    def goal_reached(self,line):
+        for q in reversed(line):
+            if self.map.get_at(q) == self.goal_color:
+                return True
         return False
-
-
-    def tree_traversal(self ,node ,x_rand, e_dist,prev_node_nearest):
-        
-        node_nearest = None
-        min_dist = None
-        temp_dist = ecludian(x_n = node.data,x_r = x_rand)
-        if temp_dist < e_dist:
-            min_dist = temp_dist
-            node_nearest = node
-        else:
-            node_nearest = prev_node_nearest
-            min_dist = e_dist
-                
-        for node_ in node.children:
-            min_dist, node_nearest = self.tree_traversal(node_,x_rand,min_dist,node_nearest)
-        
-        return min_dist, node_nearest
-
-    def visulize_tree(self,x_nearest, x_new):
-        color = (0,0,0)
-        # Drawing Rectangle
-        pygame.draw.circle(self.map,color,center=x_new,radius=2,width=2)
-        pygame.draw.line(self.map,color,start_pos=x_nearest,end_pos=x_new,width=1)
-        pygame.display.update() 
-    
-    def visulize_deleted_branch(self,x_1, x_2):
-        color = (255,255,255)
-        # Drawing Rectangle
-        pygame.draw.line(self.map,color,start_pos=x_1,end_pos=x_2,width=1)
-        pygame.display.update() 
-        
         
         
         
@@ -189,10 +167,12 @@ if __name__=="__main__":
     map.fill((255,255,255))
     
     #draw star and goal points
-    x_star=(100,20)
-    x_goal=(400,500)
-    pygame.draw.circle(map,(0,0,255),center=x_star,radius=5,width=5)
-    pygame.draw.circle(map,(0,0,255),center=x_goal,radius=5,width=5)
+    q_star=(100,20)
+    q_goal=(400,500)
+    star_color = (255,0,255,255)
+    goal_color = (0,0,255,255)
+    pygame.draw.circle(map,star_color,center=q_star,radius=5,width=5)
+    pygame.draw.circle(map,goal_color,center=q_goal,radius=5,width=5)
 
     #draw obstacles
     obstacle_color = (0,255,0,255)
@@ -207,7 +187,7 @@ if __name__=="__main__":
 
 
     # Initializing RTT
-    rrt = RRT(map=map,x_star=x_star,x_goal=x_goal,step_size=25,goal_threshold=7, obstacles_color=obstacle_color)
+    rrt = RRT(map=map,q_star=q_star,q_goal=q_goal,step_size=25,goal_threshold=7, obstacles_color=obstacle_color,goal_color = goal_color)
     #Build RRT
     rrt.build_rrt(int(1e6))
     input('Press ENTER to exit')
