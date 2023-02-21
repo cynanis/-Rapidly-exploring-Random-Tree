@@ -3,7 +3,7 @@ from model import BicycleModel
 from control2d import lateral_control_stanly
 from cfg import params
 
-def straight_line(q1, q2):
+def line(q1, q2):
     """denote the straight-line path from x1 to x2"""
     x_1 , y_1 = q1["x"],q2["y"]
     x_2, y_2  = q2["x"],q2["y"]
@@ -89,6 +89,16 @@ def draw_trajectoy(map,trajectory,color = (0,0,0),width=1):
         draw_branch(map,trajectory[i],trajectory[i+1],color,width)
         if i == len_-2:
             return
+
+def delete_trajectory(map,trajectory,width=1):
+    len_ = len(trajectory)
+    for i in range(len_):
+        if i == len_-1:
+            return
+        draw_branch(map,trajectory[i],trajectory[i+1],(255,255,255),width)
+    draw_point(map,trajectory[0],width=width,raduis=width)
+    draw_point(map,trajectory[-1],width=width,raduis=width)
+
 
 def draw_trajectories_path(map,x_goal,color=(255,0,0),width=2):
     if x_goal is None:
