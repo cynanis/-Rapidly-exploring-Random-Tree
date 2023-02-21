@@ -1,46 +1,57 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from random import randint
+import random
 import pygame
 from utils import *
 from tree import Node
+from model import BicycleModel
+from control2d import lateral_control_stanly
+from cfg import params
+
 
 class RRT:
-    def __init__(self, map, q_star, q_goal, step_size = 10,goal_threshold=8, obstacles_color= (0,255,0,255)):
+    def __init__(self, map, q_star, q_goal,goal_threshold=8, obstacles_color= (0,255,0,255)):
         """ 
-            q_star = (x,y)
-            q_goal = (x,y)
+            q_star : starting state {"x":x,"y":y,"theta"=theta,"delta":delta,"beta":beta}
+            q_goal : goal state {"x":x,"y"=y,"theta"=theta,"delta":delta,"beta":beta}
         
         """
         self.map = map
         self.tree = Node(q = q_star)
         self.goal =  q_goal
-        self.step_size = step_size
         self.goal_threshold = goal_threshold
         self.obstacles_color = obstacles_color
+        self.motion_Model = BicycleModel(q_init=q_star)
 
     def build_rrt(self,steps):
         for i in range(steps):
+            #get a random location sample in the map
             q_rand = self.sample_free()
-            _,x_nearest = self.nearest(self.tree,q_rand)
-            q_new = self.steer(x_nearest.q,q_rand)
-            if self.is_collision_free(line(x_nearest.q, q_new)): 
+            #find the nearest node to the random sample
+            _,x_nearest = self.nearest(x = self.tree,q_rand = q_rand)
+            #genertate a steering trajectory from nearest node to random sample
+            q_new, trajectory = self.steer(x_nearest.q,q_rand)
+            #check for collision
+            if self.is_collision_free(trajectory): 
+                #add node to the tree
                 x_new = Node(q_new)
                 x_nearest.add_child(x_new)
-                draw_branch(self.map,x_nearest.q,x_new.q)
-                
-                if is_goal_reached(line(x_nearest.q,x_new.q),self.goal,self.goal_threshold):
-                    pygame.draw.circle(self.map,(255,0,0),self.goal,radius =self.goal_threshold,width=self.goal_threshold)
-                    pygame.display.update()
-                    self.draw_path(x_new,width=3)
-                    return self.tree
-
+                #the newly created tree branch
+                draw_trajectoy(self.map,trajectory,width=3)
+                #if goal reached draw path
+                if is_goal_reached(trajectory,self.goal,self.goal_threshold):
+                    draw_point(self.map,self.goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0))
+                    draw_trajectories_path(self.map,x_new,width=4,color=(255,0,0))
+                    break
+        return self.tree
 
 
 
     def sample_free(self):
-        q_rand = (randint(1,self.map.get_width()-1),randint(1,self.map.get_height()-1))
-        if self.is_point_collision_free(q_rand):
+        q_rand = {"x":randint(1,self.map.get_width()-1),"y":randint(1,self.map.get_height()-1),
+                  "theta":random.uniform(-np.pi,np.pi)}
+        if self.point_is_collision_free(q_rand):
             return q_rand
         else:
             return self.sample_free()
@@ -51,51 +62,52 @@ class RRT:
         if x is not None:
             temp_dist = ecludian(x.q,q_rand)
             if temp_dist < e_dist:
-                min_dist = temp_dist
                 x_nearest = x
+                min_dist = temp_dist
             else:
                 x_nearest = x_nearest_prev
                 min_dist = e_dist
-                    
+     
             for x_ in x.children:
                 min_dist, x_nearest = self.nearest(x_,q_rand,min_dist,x_nearest)
+                
         return min_dist,x_nearest
              
 
     
     def steer(self, q_nearest, q_rand):
-        step = self.step_size
-        if ecludian(q_nearest,q_rand) < self.step_size :
-            return q_rand
-        else:
-            x1,y1 = q_nearest
-            x2,y2 = q_rand
-            a = (y2-y1)/(x2-x1+np.finfo(np.float32).eps)
-            x3 = (step**2/(a**2 +1))**0.5 + x1
-            y3 =  a * ((step**2/(a**2 +1))**0.5) + y1
-        
-        return (round(x3),round(y3))
+        trj = [q_nearest]
+        for i in range(10):
+            self.motion_Model.update_state(q_state = trj[i])
+            v = params["v_max"]
+            delta = lateral_control_stanly(trj[i],q_rand,v)
+            trj.append(self.motion_Model.forward(v,delta))
+            
+        return trj[-1], trj
 
     def is_collision_free(self,line):
-        if self.is_point_collision_free(line[-1]) and self.is_point_collision_free(line[0]):
-            for q in line:
-                if self.map.get_at(q) == self.obstacles_color:
-                    return False
-            return True
-        return False
+        for q in line:
+            if not self.point_is_collision_free(q):
+                return False
+        return True
     
-    def is_point_collision_free(self,q):
-        x, y = q
+    def point_is_collision_free(self,q):
+        x, y = q["x"],q["y"]
         if (x>0 and y>0) and x < self.map.get_width() and y < self.map.get_height():
-            if self.map.get_at(q) != self.obstacles_color:
+            if self.map.get_at((x,y)) != self.obstacles_color:
                 return True
         return False
         
-    def draw_path(self,x_goal,color=(255,0,0),width=2):
-        if x_goal == None or x_goal.parent == None:
-            return
-        draw_branch(self.map,x_goal.q,x_goal.parent.q,color=color,width =width)
-        self.draw_path(x_goal.parent,color)
+        
+    def tree_len(self,node):
+        i = 0
+        if node is not None:
+            i += 1
+        for node_ in node.children:
+            i += self.tree_len(node_)
+            
+        return i
+
         
         
         
@@ -113,12 +125,12 @@ if __name__=="__main__":
     map.fill((255,255,255))
     
     #draw star and goal points
-    q_star=(100,20)
-    q_goal=(400,500)
+    q_start={"x":100,"y":20,"theta":0.3,"delta":0.1,"beta":0.01}
+    q_goal={"x":400,"y":500,"theta":0,"delta":0,"beta":0}
     star_color = (255,0,255,255)
     goal_color = (0,0,255,255)
-    pygame.draw.circle(map,star_color,center=q_star,radius=5,width=5)
-    pygame.draw.circle(map,goal_color,center=q_goal,radius=7,width=7)
+    pygame.draw.circle(map,star_color,center=(q_start["x"],q_start["y"]),radius=5,width=5)
+    pygame.draw.circle(map,goal_color,center=(q_goal["x"],q_goal["y"]),radius=7,width=7)
 
     #draw obstacles
     obstacle_color = (0,255,0,255)
@@ -133,7 +145,7 @@ if __name__=="__main__":
 
 
     # Initializing RTT
-    rrt = RRT(map=map,q_star=q_star,q_goal=q_goal,step_size=25,goal_threshold=7, obstacles_color=obstacle_color)
+    rrt = RRT(map=map,q_star=q_start,q_goal=q_goal,goal_threshold=7, obstacles_color=obstacle_color)
     #Build RRT
     rrt.build_rrt(int(1e6))
     input('Press ENTER to exit')
