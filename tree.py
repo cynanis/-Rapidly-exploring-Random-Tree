@@ -1,8 +1,9 @@
 class Node:
 
-    def __init__(self,q):
-        """ q = (x,y) """
+    def __init__(self,q,u=None):
+        """ q = {"x":x,"y"=y,"theta"=theta,"delta":delta,"beta":beta} """
         self.q = q
+        self.u = u
         self.children = []
         self.cost = None
         self.parent = None
