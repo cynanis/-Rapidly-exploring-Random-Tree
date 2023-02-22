@@ -38,7 +38,7 @@ class RRT:
                 x_new = Node(q_new)
                 x_nearest.add_child(x_new)
                 #the newly created tree branch
-                draw_trajectoy(self.map,trajectory,width=3)
+                draw_trajectoy(self.map,trajectory,width=1)
                 #if goal reached draw path
                 if is_goal_reached(trajectory,self.goal,self.goal_threshold):
                     draw_point(self.map,self.goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0))

@@ -51,7 +51,7 @@ class RRTStar(RRT):
                     goal_reached = True
                 
                 #visulize the updated tree
-                draw_trajectoy(self.map,trajectory(x_min.q,x_new.q),width=2)
+                draw_trajectoy(self.map,trajectory(x_min.q,x_new.q),width=1)
                         
                 #rewrite the tree 
                 for x_near in X_near:
@@ -68,8 +68,8 @@ class RRTStar(RRT):
                                 goal_reached = True
 
                             #visulize the updated tree
-                            delete_trajectory(self.map,trajectory(x_parent.q,x_near.q),width=2)
-                            draw_trajectoy(self.map,trajectory(x_new.q,x_near.q),width=2)
+                            delete_trajectory(self.map,trajectory(x_parent.q,x_near.q),width=1)
+                            draw_trajectoy(self.map,trajectory(x_new.q,x_near.q),width=1)
 
                 if goal_reached:
                     draw_point(self.map,self.goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0))
