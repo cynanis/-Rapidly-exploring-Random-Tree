@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from random import randint
 import pygame
-from utils import *
-from tree import Node
-from rrt import RRT
+from .utils import *
+from .tree import Node
+from .rrt import RRT
 
 
 class RRTStar(RRT):

@@ -1,5 +1,5 @@
 import numpy as np
-from cfg import params
+from .cfg import params
 
 
 # def pure_pursuit(q_state,q_d,v):

@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 from random import randint
 import random
 import pygame
-from utils import *
-from tree import Node
-from model import BicycleModel
-from control2d import lateral_control_stanly
-from cfg import params
+from .utils import *
+from .tree import Node
+from .model import BicycleModel
+from .control2d import lateral_control_stanly
+from .cfg import params
 
 
 class RRT:

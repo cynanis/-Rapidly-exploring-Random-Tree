@@ -1,6 +1,6 @@
 import pygame
-from rrt import RRT
-from rrt_star import RRTStar
+from src.rrt import RRT
+from src.rrt_star import RRTStar
 import argparse
 
 parser = argparse.ArgumentParser(description='Process some integers.')
@@ -40,7 +40,8 @@ if args.type == "rrt":
     rrt = RRT(map=map,q_star=q_start,q_goal=q_goal,goal_threshold=7, obstacles_color=obstacle_color)
 elif args.type == "rrt_star":
     rrt = RRTStar(map=map,q_star=q_start,q_goal=q_goal,goal_threshold=7, obstacles_color=obstacle_color)
-
+else:
+    print("incorrect algorithm name")
 #Build RRT
 rrt.build_rrt(int(1e6))
 

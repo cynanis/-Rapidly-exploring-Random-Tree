@@ -1,7 +1,7 @@
 import pygame
-from model import BicycleModel
-from control2d import lateral_control_stanly
-from cfg import params
+from .model import BicycleModel
+from .control2d import lateral_control_stanly
+from .cfg import params
 
 def line(q1, q2):
     """denote the straight-line path from x1 to x2"""

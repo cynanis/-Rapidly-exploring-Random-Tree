@@ -1,5 +1,5 @@
 import numpy as np
-from cfg import params
+from .cfg import params
 
 class BicycleModel():
     def __init__(self, q_init):
