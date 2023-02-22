@@ -69,11 +69,7 @@ def lateral_control_stanly(q_state,q_d,v):
             steer += 2*np.pi
  
         #print("steer {}".format(steer))
-
-    
-        # theta_p = np.arctan2((q_d["y"]-self.q_state["y"]),(q_d["x"]-self.q_state["x"]+1e-7))
-        # psi = self.q_state["theta"] - theta_p
-        # ld = min(v * params["kp_ld"],((q_d["y"]-self.q_state["y"])**2 + (q_d["x"]-self.q_state["x"])**2)**0.5)
-        # cross_trck_err = np.tan(-psi) * ld
-        # delta = psi + np.arctan2((params["kp_s"]*cross_trck_err),v)
         return steer
+    
+def Longitudinal_control_pid(q_state,v_d):
+    return v_d
