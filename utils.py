@@ -97,7 +97,7 @@ def delete_trajectory(map,trajectory,width=1):
             return
         draw_branch(map,trajectory[i],trajectory[i+1],(255,255,255),width)
     draw_point(map,trajectory[0],width=width,raduis=width)
-    draw_point(map,trajectory[-1],width=width,raduis=width)
+    draw_point(map,trajectory[-1],width=width,raduis=width+0.5)
 
 
 def draw_trajectories_path(map,x_goal,color=(255,0,0),width=2):
