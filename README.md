@@ -13,12 +13,15 @@ This repository implements some common RRT algorithms used in robotics ( in our 
 ## Test
 ##### RRT:   
 `py test.py -t rrt`
+<br />
 ![rrt](https://github.com/cynanis/Rapidly-exploring-Random-Tree/blob/main/pictures/rrt.PNG) 
-##### RRT*:   
+##### RRT*:
 `py test.py -r rrt_star`
+<br />
 ![rrt*](https://github.com/cynanis/Rapidly-exploring-Random-Tree/blob/main/pictures/rrt_star.PNG)
 
 
 ## Papres
 [RRT:](http://msl.cs.uiuc.edu/~lavalle/papers/Lav98c.pdf)Rapidly-Exploring Random Trees: A New Tool for Path Planning
+<br />
 [RRT*:](https://arxiv.org/abs/1105.1186)Sampling-based algorithms for optimal motion planning
