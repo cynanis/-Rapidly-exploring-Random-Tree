@@ -23,9 +23,9 @@ class BicycleModel():
             v = max(v,-params["v_max"])  
         
         if delta >0:
-            delta = min(delta,params["delta_max"])
+            delta = min(delta,params["steer_max"])
         else:
-            delta = max(delta,-params["delta_max"])
+            delta = max(delta,-params["steer_max"])
         #print("q_nearest: ",self.q_state)
         xc,yc,theta,delta_,beta =self.q_state.values()
         #setup the next states using the differential equations     
