@@ -14,9 +14,11 @@ This repository implements some common RRT algorithms used in robotics ( in our 
 ##### RRT:   
 `py test.py -t rrt`
 <br />
+<br />
 ![rrt](https://github.com/cynanis/Rapidly-exploring-Random-Tree/blob/main/pictures/rrt.PNG) 
 ##### RRT*:
 `py test.py -r rrt_star`
+<br />
 <br />
 ![rrt*](https://github.com/cynanis/Rapidly-exploring-Random-Tree/blob/main/pictures/rrt_star.PNG)
 
