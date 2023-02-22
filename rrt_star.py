@@ -21,15 +21,18 @@ class RRTStar(RRT):
     def build_rrt(self,steps):
         goal_reached = False
         for i in range(steps):
+            #get a random location sample in the map
             q_rand = self.sample_free()
+            #find the nearest node to the random sample
             _,x_nearest = self.nearest(self.tree,q_rand)
+            #genertate a steering trajectory from nearest node to random sample
             q_new, trajectory_ = self.steer(x_nearest.q,q_rand)
-            
+            #check for collision
             if self.is_collision_free(trajectory_): 
                 # find list of x nodes that lie in the circle centerd at q_new
                 X_near = self.near(self.tree,q_new,self.rewire_radius)     
                 
-                 #connect x_new node to the near x node that result in a minimum-cost path
+                 #connect the x_new node to the near x_min=x_near node that result in a minimum-cost c_min path
                 x_new = Node(q = q_new)
                 x_min = x_nearest
                 c_min = cost(x_nearest) + ecludian(x_nearest.q,q_new)
@@ -38,6 +41,8 @@ class RRTStar(RRT):
                         if cost(x_near) + ecludian(x_near.q,q_new) < c_min:
                             x_min = x_near
                             c_min = cost(x_near) + ecludian(x_near.q,q_new)
+                
+                #add x_new node to the tree
                 x_min.add_child(x_new)
                 x_new.add_cost(c_min)
 
@@ -51,6 +56,7 @@ class RRTStar(RRT):
                 #rewrite the tree 
                 for x_near in X_near:
                     if self.is_collision_free(trajectory(x_new.q,x_near.q)):
+                        #if near node achieve less cost change its parent 
                         if cost(x_new) + ecludian(x_new.q,x_near.q) < cost(x_near):
                             x_parent = parent(x_near)
                             x_parent.remove_child(x_near)
