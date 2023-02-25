@@ -23,23 +23,23 @@ class RRT:
         self.obstacles_color = obstacles_color
         self.motion_Model = BicycleModel(q_init=q_star)
 
-    def build_rrt(self,steps):
+    def build(self,steps):
         for i in range(steps):
             #get a random location sample in the map
-            q_rand = self.sample_free()
+            q_rand = self.sample()
             #find the nearest node to the random sample
-            _,x_nearest = self.nearest(x = self.tree,q_rand = q_rand)
+            _,x_nearest = self.nearest_neighbor(x = self.tree,q_rand = q_rand)
             #genertate a steering trajectory from nearest node to random sample
             q_new, trajectory = self.steer(x_nearest.q,q_rand)
             #check for collision
-            if self.is_collision_free(trajectory): 
+            if self.collision_free(trajectory): 
                 #add node to the tree
                 x_new = Node(q_new)
                 x_nearest.add_child(x_new)
                 #the newly created tree branch
                 draw_trajectoy(self.map,trajectory,width=1)
                 #if goal reached draw path
-                if is_goal_reached(trajectory,self.goal,self.goal_threshold):
+                if self.in_goal_region(x_new.q):
                     draw_point(self.map,self.goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0))
                     draw_trajectories_path(self.map,x_new,width=4,color=(255,0,0))
                     break
@@ -47,15 +47,15 @@ class RRT:
 
 
 
-    def sample_free(self):
+    def sample(self):
         q_rand = {"x":randint(1,self.map.get_width()-1),"y":randint(1,self.map.get_height()-1),
                   "theta":random.uniform(-np.pi,np.pi)}
-        if self.point_is_collision_free(q_rand):
+        if self.point_collision_free(q_rand):
             return q_rand
         else:
-            return self.sample_free()
+            return self.sample()
 
-    def nearest(self,x,q_rand,e_dist = np.inf,x_nearest_prev=None):
+    def nearest_neighbor(self,x,q_rand,e_dist = np.inf,x_nearest_prev=None):
         x_nearest = None
         min_dist = None
         if x is not None:
@@ -68,7 +68,7 @@ class RRT:
                 min_dist = e_dist
      
             for x_ in x.children:
-                min_dist, x_nearest = self.nearest(x_,q_rand,min_dist,x_nearest)
+                min_dist, x_nearest = self.nearest_neighbor(x_,q_rand,min_dist,x_nearest)
                 
         return min_dist,x_nearest
              
@@ -84,20 +84,25 @@ class RRT:
             
         return trj[-1], trj
 
-    def is_collision_free(self,line):
+    def collision_free(self,line):
         for q in line:
-            if not self.point_is_collision_free(q):
+            if not self.point_collision_free(q):
                 return False
         return True
     
-    def point_is_collision_free(self,q):
+    def point_collision_free(self,q):
         x, y = q["x"],q["y"]
         if (x>0 and y>0) and x < self.map.get_width() and y < self.map.get_height():
             if self.map.get_at((x,y)) != self.obstacles_color:
                 return True
         return False
         
-        
+    def in_goal_region(self,q):
+      
+        if ecludian(q,self.goal) <= self.goal_threshold+1:
+            return True
+        return False    
+    
     def tree_len(self,node):
         i = 0
         if node is not None:
@@ -146,7 +151,7 @@ if __name__=="__main__":
     # Initializing RTT
     rrt = RRT(map=map,q_star=q_start,q_goal=q_goal,goal_threshold=7, obstacles_color=obstacle_color)
     #Build RRT
-    rrt.build_rrt(int(1e6))
+    rrt.build(int(1e6))
     input('Press ENTER to exit')
     
     
