@@ -36,29 +36,25 @@ def parent(v):
     return v
 
 def cost(v):
-    if v.cost is not None:
-        return v.cost
-    elif v.parent is None:
+    if v is None:
         return 0
-    
-    return cost(parent(v)) + c(line(parent(v).q,v.q))
+    elif v.w is not None:
+        return v.w + cost(v.parent)
+    else:
+        return c(trajectory(parent(v).q,v.q)) + cost(parent(v))
 
 def c(line):
-    return ecludian(line[0],line[-1])
+    dist = 0
+    len_ = len(line)
+    for i in range(len_):
+        if i < len_ - 1:
+            dist += ecludian(line[i],line[i+1])
+    return dist
 
 def ecludian(q_n, q_r):
     x1 , y1, = q_n["x"],q_n["y"]
     x2, y2 = q_r["x"], q_r["y"]
     return ((x2-x1)**2 + (y2 - y1)**2)**0.5
-
-
-def is_goal_reached(line,q_goal,goal_threshold):
-
-    for q in reversed(line):
-        if ecludian(q,q_goal) < goal_threshold:
-            return True
-    return False
-
 
 def draw_branch(map,q_start, q_end,color = (0,0,0),width = 1):
     # Drawing line
