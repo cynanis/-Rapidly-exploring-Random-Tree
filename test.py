@@ -43,6 +43,6 @@ elif args.type == "rrt_star":
 else:
     print("incorrect algorithm name")
 #Build RRT
-rrt.build_rrt(int(1e6))
+rrt.build(int(1e6))
 
 input('Press ENTER to exit')
