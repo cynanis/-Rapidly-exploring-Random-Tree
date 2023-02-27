@@ -3,40 +3,37 @@ from src.rrt import RRT
 from src.rrt_star import RRTStar
 from src.informed_rrt_star import InformedRRTStar
 import argparse
+import numpy as np
+import cv2 as cv
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('-t', "--type", type=str, default='rrt',
                     help='rrt or rrt_star')
 args = parser.parse_args()
-# Initializing Pygame
-pygame.init()
 
 # Initializing surface
-map = pygame.display.set_mode((600,600))
-
-map.fill((255,255,255))
+map = np.ones((600,600,3), dtype=np.uint8)*255
 
 #draw star and goal points
-q_start={"x":100,"y":50,"theta":0.3,"delta":0.1,"beta":0.01}
-q_goal={"x":250,"y":300,"theta":0,"delta":0,"beta":0}
-star_color = (255,0,255,255)
-goal_color = (0,0,255,255)
-pygame.draw.circle(map,star_color,center=(q_start["x"],q_start["y"]),radius=5,width=5)
-pygame.draw.circle(map,goal_color,center=(q_goal["x"],q_goal["y"]),radius=7,width=7)
+q_start={"x":100,"y":20,"theta":0.3,"delta":0.1,"beta":0.01}
+q_goal={"x":350,"y":420,"theta":0,"delta":0,"beta":0}
+star_color = (255,0,255)
+goal_color = (255,0,0)
+
+cv.circle(map,center=(q_start["x"],q_start["y"]),radius=5,color=star_color,thickness=-1,lineType=8)
+cv.circle(map,center=(q_goal["x"],q_goal["y"]),radius=7,color=goal_color,thickness=-1,lineType=8)
+
 
 #draw obstacles
-obstacle_color = (0,255,0,255)
-pygame.draw.rect(map,obstacle_color,[300,300,50,50],width=30)
-pygame.draw.rect(map,obstacle_color,[100,480,50,50],width=30)
-pygame.draw.circle(map,obstacle_color,center=(400,90),radius=30,width=30)
-pygame.draw.circle(map,obstacle_color,center=(250,70),radius=20,width=40)
-pygame.draw.rect(map,obstacle_color,[100,80,50,50],width=50)
-pygame.draw.rect(map,obstacle_color,[50,250,50,50],width=50)
-pygame.draw.rect(map,obstacle_color,[10,120,40,40],width=40)
-pygame.draw.rect(map,obstacle_color,[120,70,50,50],width=50)
-pygame.draw.rect(map,obstacle_color,[200,200,30,30],width=30)
-pygame.draw.rect(map,obstacle_color,[290,80,40,40],width=40)
-pygame.draw.rect(map,obstacle_color,[400,130,40,20],width=50)
+obstacle_color = (0,255,0)
+cv.rectangle(map,(255,255),(300,300),obstacle_color,thickness=-1)
+cv.rectangle(map,(150,150),(200,200),obstacle_color,thickness=-1)
+cv.rectangle(map,(100,300),(170,325),obstacle_color,thickness=-1)
+cv.rectangle(map,(100,80),(150,120),obstacle_color,thickness=-1)
+cv.rectangle(map,(10,80),(50,120),obstacle_color,thickness=-1)
+cv.rectangle(map,(210,320),(240,350),obstacle_color,thickness=-1)
+cv.circle(map,center=(400,60),radius=40,color=obstacle_color,thickness=-1)
+cv.circle(map,center=(250,60),radius=40,color=obstacle_color,thickness=-1)
 
 # Initializing RTT
 rrt = None
