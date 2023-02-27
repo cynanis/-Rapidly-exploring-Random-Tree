@@ -107,14 +107,15 @@ def draw_ellipse(map,q_start,q_goal,c_max,c_min,Q_center,color=(0,0,255),name="R
     a = np.sqrt(c_max ** 2 - c_min ** 2) 
     b = c_max 
     angle = np.arctan2((q_goal["x"] - q_start["x"]),(q_goal["y"] - q_start["y"]))*180/np.pi
-    cx = Q_center[0][0]# - a/2.0
-    cy = Q_center[1][0]# - b / 2.0
+    cx = round(Q_center[0][0])# - a/2.0
+    cy = round(Q_center[1][0])# - b / 2.0
+    print(cx)
     # target_rect = pygame.Rect((cx,cy,a,b))
     # shape_surf = pygame.Surface(target_rect.size, pygame.SRCALPHA)
     # pygame.draw.ellipse(shape_surf, (0,0,255), (0, 0, *target_rect.size), 1)
     # rotated_surf = pygame.transform.rotate(shape_surf, angle)
     # map.blit(rotated_surf, rotated_surf.get_rect(center = target_rect.center))
-    cv.ellipse(img=map,center=(cx,cy),axes=(b/2.0,a/2.0),angle=angle, startAngle=0,endAngle=360,
+    cv.ellipse(img=map,center=(cx,cy),axes=(round(b/2),round(a/2)),angle=angle, startAngle=0,endAngle=360,
                 color=color,
                 thickness=1,
-                line_type=8)
+                lineType=8)

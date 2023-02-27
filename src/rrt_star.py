@@ -21,7 +21,7 @@ class RRTStar(RRT):
             #find the nearest node to the random sample
             _,x_nearest = self.nearest_neighbor(self.tree,q_rand)
             #genertate a steering trajectory from nearest node to random sample
-            q_new,   = self.steer(x_nearest.q,q_rand)
+            q_new, line_n = self.steer(x_nearest.q,q_rand)
             #check for collision
             if self.collision_free(line_n): 
                 # find list of x nodes that lie in the circle centerd at q_new
@@ -44,7 +44,7 @@ class RRTStar(RRT):
                 #add x_new node to the tree
                 x_min.add_child(x_new)                
                 #visulize the updated tree
-                draw_trajectoy(self.map,trajectory(x_min.q,x_new.q),width=1)
+                draw_trajectoy(self.map,trajectory(x_min.q,x_new.q),width=1,color=(0,0,0))
                         
                 #rewrite the tree 
                 for x_near in X_near:
@@ -54,20 +54,23 @@ class RRTStar(RRT):
                     if self.collision_free(line_n2r):
                         #if near node achieve less cost change its parent 
                         if c_new < c_near:
-                            x_near.add_weight(c(line_n2r))
+                            x_near_parent = parent(x_near)
                             x_near.parent.remove_child(x_near)
+                            x_near.add_weight(c(line_n2r))
                             x_new.add_child(x_near)                
 
                             #visulize the updated tree
-                            delete_trajectory(self.map,trajectory(x_parent.q,x_near.q),width=1)
+                            delete_trajectory(self.map,trajectory(x_near_parent.q,x_near.q),width=1)
                             draw_trajectoy(self.map,trajectory(x_new.q,x_near.q),width=1)
 
                 if self.in_goal_region(x_new.q):
-                    draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0))
-                    draw_trajectories_path(self.map,x_new,width=4,color=(255,0,0))
-                    return self.tree
+                    draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(0,0,255))
+                    draw_trajectories_path(self.map,x_new,width=2,color=(0,0,255))
 
-    
+            if cv.waitKey(1) == ord('q'):
+                break
+        return self.tree            
+                
     def near(self,x,q,r):
         """
         returns list of nodes lie in the cirlce centered at q with raduis r
