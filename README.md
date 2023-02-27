@@ -27,3 +27,11 @@ This repository implements some common RRT algorithms used in robotics ( in our 
 [RRT:](http://msl.cs.uiuc.edu/~lavalle/papers/Lav98c.pdf)Rapidly-Exploring Random Trees: A New Tool for Path Planning
 <br />
 [RRT*:](https://arxiv.org/abs/1105.1186)Sampling-based algorithms for optimal motion planning
+<br />
+[Informed RRT*:](https://arxiv.org/abs/1404.2334.pdf)Optimal Sampling-based Path Planning Focused via Direct Sampling of an Admissible Ellipsoidal heuristic
+<br />
+[Batch Informed Trees BIT*:](https://arxiv.org/pdf/1707.01888.pdf)Informed asymptotically optimal anytime search
+<br />
+[Adaptively Informed Trees AIT*:](https://arxiv.org/abs/2002.06599.pdf)Fast Asymptotically Optimal Path Planning through Adaptive Heuristics ((ICRA) 2020)
+<br />
+[Effort Informed Trees EIT*:](https://arxiv.org/pdf/2111.01877.pdf)Asymmetric bidirectional sampling-based path planning
