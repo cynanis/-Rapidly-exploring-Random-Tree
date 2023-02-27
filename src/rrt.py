@@ -37,11 +37,11 @@ class RRT:
                 x_new = Node(q_new)
                 x_nearest.add_child(x_new)
                 #the newly created tree branch
-                draw_trajectoy(self.map,trajectory,width=1,color=(0,0,0))
+                draw_line(self.map,trajectory,width=1,color=(0,0,0))
                 #if goal reached draw path
                 if self.in_goal_region(x_new.q):
                     draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(0,0,255))
-                    draw_trajectories_path(self.map,x_new,width=2,color=(0,0,255))
+                    draw_path(self.map,x_new,width=2,color=(0,0,255))
 
             if cv.waitKey(1) == ord('q'):
                 break

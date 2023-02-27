@@ -70,46 +70,41 @@ def draw_point(map,q_point,color = (0,0,0),raduis = 0.5,width=1,name="RRT"):
     cv.circle(map,center=(q_point["x"],q_point["y"]),radius = raduis,color=color,thickness=-1)
     cv.imshow(name,map)
      
-def draw_path(map,x_goal,color=(0,0,255),width=2,name="RRT"):
+def draw_line(map,line,color = (0,0,0),width=1,name="RRT"):
+    len_ = len(line)
+    for i in range(len_):
+        if i == len_-1:
+            break
+        draw_branch(map,line[i],line[i+1],color,width,name)
 
+def delete_line(map,line,width=1,color = (255,255,255),name="RRT"):
+    len_ = len(line)
+    for i in range(len_):
+        if i == len_-1:
+            break
+        draw_branch(map,line[i],line[i+1],color,width,name)
+    # draw_point(map,line[0],width=width,raduis=width,name=name)
+    # draw_point(map,line[-1],width=width,raduis=width,name=name)
+
+
+def draw_path(map,x_goal,color=(0,0,255),width=2,name="RRT"):
     if x_goal is None:
         return
     draw_path(map,x_goal.parent,color,width,name)
     if x_goal.parent is not None:
-        draw_branch(map,x_goal.parent.q,x_goal.q,color,width,name)
-
-def draw_trajectoy(map,trajectory,color = (0,0,0),width=1,name="RRT"):
-    len_ = len(trajectory)
-    for i in range(len_):
-        draw_branch(map,trajectory[i],trajectory[i+1],color,width,name)
-        if i == len_-2:
-            return
-
-def delete_trajectory(map,trajectory,width=1,name="RRT"):
-    len_ = len(trajectory)
-    for i in range(len_):
-        if i == len_-1:
-            return
-        draw_branch(map,trajectory[i],trajectory[i+1],(255,255,255),width,name)
-    draw_point(map,trajectory[0],width=width,raduis=width,name=name)
-    draw_point(map,trajectory[-1],width=width,raduis=width,name=name)
-
-
-def draw_trajectories_path(map,x_goal,color=(0,0,255),width=2,name="RRT"):
-    if x_goal is None:
-        return
-    draw_trajectories_path(map,x_goal.parent,color,width,name)
-    if x_goal.parent is not None:
-        trajectory_ = trajectory(x_goal.parent.q,x_goal.q)
-        draw_trajectoy(map,trajectory_,color,width,name)
+        line = trajectory(x_goal.parent.q,x_goal.q)
+        draw_line(map,line,color,width,name)
+        
+def delete_path(map,x_goal,color=(255,255,255),width=2,name="RRT"):
+    draw_path(map,x_goal,color=color,width=width,name=name)
+    
         
 def draw_ellipse(map,q_start,q_goal,c_max,c_min,Q_center,color=(0,0,255),name="RRT"):
     a = np.sqrt(c_max ** 2 - c_min ** 2) 
     b = c_max 
-    angle = np.arctan2((q_goal["x"] - q_start["x"]),(q_goal["y"] - q_start["y"]))*180/np.pi
+    angle = np.arctan2((q_goal["y"] - q_start["y"]),(q_goal["x"] - q_start["x"]))*180/np.pi
     cx = round(Q_center[0][0])# - a/2.0
     cy = round(Q_center[1][0])# - b / 2.0
-    print(cx)
     # target_rect = pygame.Rect((cx,cy,a,b))
     # shape_surf = pygame.Surface(target_rect.size, pygame.SRCALPHA)
     # pygame.draw.ellipse(shape_surf, (0,0,255), (0, 0, *target_rect.size), 1)

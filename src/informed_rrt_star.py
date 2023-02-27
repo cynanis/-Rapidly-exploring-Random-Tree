@@ -45,7 +45,7 @@ class InformedRRTStar(RRTStar):
                 #add x_new node to the tree
                 x_min.add_child(x_new)                
                 #visulize the updated tree
-                draw_trajectoy(self.map,trajectory(x_min.q,x_new.q),width=1,color=(0,0,0))
+                draw_line(self.map,trajectory(x_min.q,x_new.q),width=1,color=(0,0,0))
                         
                 #rewrite the tree 
                 for x_near in X_near:
@@ -60,13 +60,13 @@ class InformedRRTStar(RRTStar):
                             x_new.add_child(x_near)                
                             x_near.add_weight(c(line_n2r))
                             #visulize the updated tree
-                            delete_trajectory(self.map,trajectory(x_parent.q,x_near.q),width=1)
-                            draw_trajectoy(self.map,trajectory(x_new.q,x_near.q),width=1,color=(0,0,0))
+                            delete_line(self.map,trajectory(x_parent.q,x_near.q),width=1)
+                            draw_line(self.map,trajectory(x_new.q,x_near.q),width=1,color=(0,0,0))
 
                 if self.in_goal_region(x_new.q):
                     X_soln.add(x_new)
                     draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(0,0,255))
-                    draw_trajectories_path(self.map,x_new,width=2,color=(0,0,255))
+                    draw_path(self.map,x_new,width=2,color=(0,0,255))
                 # return self.tree
                 
             if cv.waitKey(1) == ord('q'):

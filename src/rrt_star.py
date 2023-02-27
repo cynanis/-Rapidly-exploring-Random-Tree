@@ -15,6 +15,7 @@ class RRTStar(RRT):
         self.rewire_radius = rewire_radius
 
     def build(self,steps):
+        x_goal_old = None
         for i in range(steps):
             #get a random location sample in the map
             q_rand = self.sample_free()
@@ -26,7 +27,6 @@ class RRTStar(RRT):
             if self.collision_free(line_n): 
                 # find list of x nodes that lie in the circle centerd at q_new
                 X_near = self.near(self.tree,q_new,self.rewire_radius)     
-                
                  #connect the x_new node to the near x_min=x_near node that result in a minimum-cost c_min path
                 x_new = Node(q = q_new)
                 x_min = x_nearest
@@ -44,7 +44,7 @@ class RRTStar(RRT):
                 #add x_new node to the tree
                 x_min.add_child(x_new)                
                 #visulize the updated tree
-                draw_trajectoy(self.map,trajectory(x_min.q,x_new.q),width=1,color=(0,0,0))
+                draw_line(self.map,trajectory(x_min.q,x_new.q),width=1,color=(0,0,0))
                         
                 #rewrite the tree 
                 for x_near in X_near:
@@ -60,12 +60,12 @@ class RRTStar(RRT):
                             x_new.add_child(x_near)                
 
                             #visulize the updated tree
-                            delete_trajectory(self.map,trajectory(x_near_parent.q,x_near.q),width=1)
-                            draw_trajectoy(self.map,trajectory(x_new.q,x_near.q),width=1)
+                            delete_line(self.map,trajectory(x_near_parent.q,x_near.q),width=1)
+                            draw_line(self.map,trajectory(x_new.q,x_near.q),width=1)
 
                 if self.in_goal_region(x_new.q):
                     draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(0,0,255))
-                    draw_trajectories_path(self.map,x_new,width=2,color=(0,0,255))
+                    draw_path(self.map,x_new,width=2,color=(0,0,255))
 
             if cv.waitKey(1) == ord('q'):
                 break
