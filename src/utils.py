@@ -2,7 +2,7 @@ import pygame
 from .model import BicycleModel
 from .control2d import lateral_control_stanly
 from .cfg import params
-
+import numpy as np
 def line(q1, q2):
     """denote the straight-line path from x1 to x2"""
     x_1 , y_1 = q1["x"],q2["y"]
@@ -31,9 +31,7 @@ def trajectory(q1,q2):
     return line_
 
 def parent(v):
-    if v.parent is not None:
-        return v.parent
-    return v
+    return v.parent
 
 def cost(v):
     if v is None:
@@ -93,7 +91,7 @@ def delete_trajectory(map,trajectory,width=1):
             return
         draw_branch(map,trajectory[i],trajectory[i+1],(255,255,255),width)
     draw_point(map,trajectory[0],width=width,raduis=width)
-    draw_point(map,trajectory[-1],width=width,raduis=width+0.5)
+    draw_point(map,trajectory[-1],width=width,raduis=width)
 
 
 def draw_trajectories_path(map,x_goal,color=(255,0,0),width=2):
@@ -103,3 +101,15 @@ def draw_trajectories_path(map,x_goal,color=(255,0,0),width=2):
     if x_goal.parent is not None:
         trajectory_ = trajectory(x_goal.parent.q,x_goal.q)
         draw_trajectoy(map,trajectory_,color,width)
+        
+def draw_ellipse(map,q_start,q_goal,c_max,c_min,Q_center):
+    a = np.sqrt(c_max ** 2 - c_min ** 2) 
+    b = c_max 
+    angle = np.arctan2((q_goal["x"] - q_start["x"]),(q_goal["y"] - q_start["y"]))*180/np.pi
+    cx = Q_center[0][0] - a/2.0
+    cy = Q_center[1][0] - b / 2.0
+    target_rect = pygame.Rect((cx,cy,a,b))
+    shape_surf = pygame.Surface(target_rect.size, pygame.SRCALPHA)
+    pygame.draw.ellipse(shape_surf, (0,0,255), (0, 0, *target_rect.size), 1)
+    rotated_surf = pygame.transform.rotate(shape_surf, angle)
+    map.blit(rotated_surf, rotated_surf.get_rect(center = target_rect.center))

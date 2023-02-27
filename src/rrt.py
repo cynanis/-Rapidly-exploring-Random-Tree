@@ -10,23 +10,24 @@ from .cfg import params
 
 
 class RRT:
-    def __init__(self, map, q_star, q_goal,goal_threshold=8, obstacles_color= (0,255,0,255)):
+    def __init__(self, map, q_start, q_goal,goal_threshold=8, obstacles_color= (0,255,0,255)):
         """ 
-            q_star : starting state {"x":x,"y":y,"theta"=theta,"delta":delta,"beta":beta}
+            q_start : starting state {"x":x,"y":y,"theta"=theta,"delta":delta,"beta":beta}
             q_goal : goal state {"x":x,"y"=y,"theta"=theta,"delta":delta,"beta":beta}
         
         """
         self.map = map
-        self.tree = Node(q = q_star)
-        self.goal =  q_goal
+        self.tree = Node(q = q_start)
+        self.q_start = q_start
+        self.q_goal =  q_goal
         self.goal_threshold = goal_threshold
         self.obstacles_color = obstacles_color
-        self.motion_Model = BicycleModel(q_init=q_star)
+        self.motion_Model = BicycleModel(q_init=q_start)
 
     def build(self,steps):
         for i in range(steps):
             #get a random location sample in the map
-            q_rand = self.sample()
+            q_rand = self.sample_free()
             #find the nearest node to the random sample
             _,x_nearest = self.nearest_neighbor(x = self.tree,q_rand = q_rand)
             #genertate a steering trajectory from nearest node to random sample
@@ -40,20 +41,20 @@ class RRT:
                 draw_trajectoy(self.map,trajectory,width=1)
                 #if goal reached draw path
                 if self.in_goal_region(x_new.q):
-                    draw_point(self.map,self.goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0))
+                    draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0))
                     draw_trajectories_path(self.map,x_new,width=4,color=(255,0,0))
                     break
         return self.tree
 
 
 
-    def sample(self):
+    def sample_free(self):
         q_rand = {"x":randint(1,self.map.get_width()-1),"y":randint(1,self.map.get_height()-1),
                   "theta":random.uniform(-np.pi,np.pi)}
         if self.point_collision_free(q_rand):
             return q_rand
         else:
-            return self.sample()
+            return self.sample_free()
 
     def nearest_neighbor(self,x,q_rand,e_dist = np.inf,x_nearest_prev=None):
         x_nearest = None
@@ -99,7 +100,7 @@ class RRT:
         
     def in_goal_region(self,q):
       
-        if ecludian(q,self.goal) <= self.goal_threshold+1:
+        if ecludian(q,self.q_goal) <= self.goal_threshold+1:
             return True
         return False    
     
@@ -149,7 +150,7 @@ if __name__=="__main__":
 
 
     # Initializing RTT
-    rrt = RRT(map=map,q_star=q_start,q_goal=q_goal,goal_threshold=7, obstacles_color=obstacle_color)
+    rrt = RRT(map=map,q_start=q_start,q_goal=q_goal,goal_threshold=7, obstacles_color=obstacle_color)
     #Build RRT
     rrt.build(int(1e6))
     input('Press ENTER to exit')

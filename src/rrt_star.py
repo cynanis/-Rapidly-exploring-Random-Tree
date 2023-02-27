@@ -6,41 +6,42 @@ from .tree import Node
 from .rrt import RRT
 
 class RRTStar(RRT):
-    def __init__(self,map, q_star, q_goal,goal_threshold=8, rewire_radius = 8, obstacles_color= (0,255,0,255)):
+    def __init__(self,map, q_start, q_goal,goal_threshold=8, rewire_radius = 8, obstacles_color= (0,255,0,255)):
         """ 
-            q_star : starting state {"x":x,"y":y,"theta"=theta,"delta":delta,"beta":beta}
+            q_start : starting state {"x":x,"y":y,"theta"=theta,"delta":delta,"beta":beta}
             q_goal : goal state {"x":x,"y"=y,"theta"=theta,"delta":delta,"beta":beta}
         """
-        super().__init__(map, q_star, q_goal,goal_threshold, obstacles_color)
+        super().__init__(map, q_start, q_goal,goal_threshold, obstacles_color)
         self.tree.add_weight(0)
         self.rewire_radius = rewire_radius
 
     def build(self,steps):
         for i in range(steps):
             #get a random location sample in the map
-            q_rand = self.sample()
+            q_rand = self.sample_free()
             #find the nearest node to the random sample
             _,x_nearest = self.nearest_neighbor(self.tree,q_rand)
             #genertate a steering trajectory from nearest node to random sample
-            q_new, trajectory_ = self.steer(x_nearest.q,q_rand)
+            q_new,   = self.steer(x_nearest.q,q_rand)
             #check for collision
-            if self.collision_free(trajectory_): 
+            if self.collision_free(line_n): 
                 # find list of x nodes that lie in the circle centerd at q_new
                 X_near = self.near(self.tree,q_new,self.rewire_radius)     
                 
                  #connect the x_new node to the near x_min=x_near node that result in a minimum-cost c_min path
                 x_new = Node(q = q_new)
                 x_min = x_nearest
-                c_min = cost(x_nearest) + c(trajectory_)
+                c_min = cost(x_nearest) + c(line_n)
                 for x_near in X_near:
-                    trajectory_ = trajectory(x_near.q,x_new.q)
-                    if self.collision_free(trajectory_):
-                        if cost(x_near) + c(trajectory_) < c_min:
+                    line_n = trajectory(x_near.q,x_new.q)
+                    c_new = cost(x_near) + c(line_n)
+                    if self.collision_free(line_n):
+                        if c_new < c_min:
                             x_min = x_near
-                            c_min = cost(x_near) + c(trajectory_)
+                            c_min = c_new
                 
                 #update the the new node weight
-                x_new.add_weight(c(trajectory_))
+                x_new.add_weight(c(line_n))
                 #add x_new node to the tree
                 x_min.add_child(x_new)                
                 #visulize the updated tree
@@ -48,20 +49,22 @@ class RRTStar(RRT):
                         
                 #rewrite the tree 
                 for x_near in X_near:
-                    trajectory_r = trajectory(x_new.q,x_near.q)
-                    if self.collision_free(trajectory_r):
+                    c_near = cost(x_near)
+                    line_n2r = trajectory(x_new.q,x_near.q)
+                    c_new = cost(x_new) + c(line_n2r) 
+                    if self.collision_free(line_n2r):
                         #if near node achieve less cost change its parent 
-                        if cost(x_new) + c(trajectory_r) < cost(x_near):
-                            x_parent = parent(x_near)
-                            x_parent.remove_child(x_near)
+                        if c_new < c_near:
+                            x_near.add_weight(c(line_n2r))
+                            x_near.parent.remove_child(x_near)
                             x_new.add_child(x_near)                
-                            x_near.add_weight(c(trajectory_r))
+
                             #visulize the updated tree
                             delete_trajectory(self.map,trajectory(x_parent.q,x_near.q),width=1)
                             draw_trajectoy(self.map,trajectory(x_new.q,x_near.q),width=1)
 
                 if self.in_goal_region(x_new.q):
-                    draw_point(self.map,self.goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0))
+                    draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0))
                     draw_trajectories_path(self.map,x_new,width=4,color=(255,0,0))
                     return self.tree
 
@@ -122,7 +125,7 @@ if __name__=="__main__":
 
 
     # Initializing RTT
-    rrt = RRTStar(map=map,q_star=q_start,q_goal=q_goal,goal_threshold=7, obstacles_color=obstacle_color)
+    rrt = RRTStar(map=map,q_start=q_start,q_goal=q_goal,goal_threshold=7, obstacles_color=obstacle_color)
     #Build RRT
     rrt.build(int(1e6))
     input('Press ENTER to exit')
