@@ -1,4 +1,3 @@
-import pygame
 from src.rrt import RRT
 from src.rrt_star import RRTStar
 from src.informed_rrt_star import InformedRRTStar

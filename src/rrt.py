@@ -1,7 +1,6 @@
 import numpy as np
 from random import randint
 import random
-import pygame
 from .utils import *
 from .tree import Node
 from .model import BicycleModel
