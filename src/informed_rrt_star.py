@@ -5,19 +5,20 @@ from .tree import Node
 from .rrt_star import RRTStar
 
 class InformedRRTStar(RRTStar):
-    def __init__(self,map, q_start, q_goal,goal_threshold=8, rewire_radius = 8, obstacles_color= (0,255,0,255)):
+    def __init__(self,size, q_start, q_goal,goal_threshold=8, rewire_radius = 8, obstacles_color= (0,255,0,255),end_points_colors=(255,0,0)):
         """ 
             q_start : starting state {"x":x,"y":y,"theta"=theta,"delta":delta,"beta":beta}
             q_goal : goal state {"x":x,"y"=y,"theta"=theta,"delta":delta,"beta":beta}
         """
-        super().__init__(map, q_start, q_goal,goal_threshold,rewire_radius, obstacles_color)
+        super().__init__(size, q_start, q_goal,goal_threshold,rewire_radius, obstacles_color,end_points_colors)
         self.sample_config = self.hyperellipsoid_config()
         
     def build(self,steps):
+        self.map = self.init_map(name="infromed RRT*")
         X_soln = set()
         for i in range(steps):
             #the transverse diameter is cbest of the special hyperellipsoid
-            c_best = self.transverse_diameter(X_soln)
+            _, c_best = self.transverse_diameter(X_soln)
             #get a random location sample in the map
             q_rand = self.sample(c_best)
             #find the nearest node to the random sample
@@ -45,7 +46,7 @@ class InformedRRTStar(RRTStar):
                 #add x_new node to the tree
                 x_min.add_child(x_new)                
                 #visulize the updated tree
-                draw_line(self.map,trajectory(x_min.q,x_new.q),width=1,color=(0,0,0))
+                draw_line(self.map,trajectory(x_min.q,x_new.q),width=1,color=(0,0,0),name="infromed RRT*")
                         
                 #rewrite the tree 
                 for x_near in X_near:
@@ -60,13 +61,27 @@ class InformedRRTStar(RRTStar):
                             x_new.add_child(x_near)                
                             x_near.add_weight(c(line_n2r))
                             #visulize the updated tree
-                            delete_line(self.map,trajectory(x_parent.q,x_near.q),width=1)
-                            draw_line(self.map,trajectory(x_new.q,x_near.q),width=1,color=(0,0,0))
+                            delete_line(self.map,trajectory(x_parent.q,x_near.q),width=1,name="infromed RRT*")
+                            draw_line(self.map,trajectory(x_new.q,x_near.q),width=1,color=(0,0,0),name="infromed RRT*")
 
                 if self.in_goal_region(x_new.q):
                     X_soln.add(x_new)
-                    draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(0,0,255))
-                    draw_path(self.map,x_new,width=2,color=(0,0,255))
+                    # if x_new has the lowest cost draw the path
+                    x_best,c_best = self.transverse_diameter(X_soln)
+                    if x_best == x_new:
+                        print("===> cost: {:.3f}".format(c_best))
+                        if X_soln.__len__() > 1:
+                            #redraw tree and new path
+                            print("===> redrawing tree")
+                            self.map[:][:][:] = 255
+                            draw_end_points(self.map,self.q_start,self.q_goal,self.ends_color,raduis=5,name="infromed RRT*")
+                            draw_obstacles(self.map,self.obstacles_color,name="infromed RRT*")
+                            redraw_tree(self.map,self.tree,color=(0,0,0),width=1,name="infromed RRT*")
+        
+                        cmin, Q_center, _ = self.sample_config
+                        draw_ellipse(self.map,self.q_start,self.q_goal,c_best,cmin,Q_center)
+                        draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name="infromed RRT*")
+                        draw_path(self.map,x_new,width=2,color=(0,0,255),name="infromed RRT*")
                 # return self.tree
                 
             if cv.waitKey(1) == ord('q'):
@@ -76,11 +91,12 @@ class InformedRRTStar(RRTStar):
     
     def transverse_diameter(self,X_soln):
         c_best = np.inf
+        x_best = None
         if X_soln:
             costs = {node: cost(node) for node in X_soln}
             x_best = min(costs, key=costs.get)
             c_best = costs[x_best]    
-        return c_best
+        return x_best,c_best
         
     def sample(self,c_max):
         if c_max < np.inf:
@@ -89,7 +105,6 @@ class InformedRRTStar(RRTStar):
                  np.sqrt(c_max ** 2 - c_min ** 2) / 2.0,
                  np.sqrt(c_max ** 2 - c_min ** 2) / 2.0]
             L = np.diag(r)
-            draw_ellipse(self.map,self.q_start,self.q_goal,c_max,c_min,Q_center)
             while True:
                 Q_ball = self.sample_unit_nball()
                 Q_rand = np.dot(np.dot(C,L),Q_ball) + Q_center

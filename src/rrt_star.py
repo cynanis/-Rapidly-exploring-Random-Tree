@@ -5,17 +5,18 @@ from .tree import Node
 from .rrt import RRT
 
 class RRTStar(RRT):
-    def __init__(self,map, q_start, q_goal,goal_threshold=8, rewire_radius = 8, obstacles_color= (0,255,0,255)):
+    def __init__(self,size, q_start, q_goal,goal_threshold=8, rewire_radius = 8, obstacles_color= (0,255,0,255),end_points_colors=(255,0,0)):
         """ 
             q_start : starting state {"x":x,"y":y,"theta"=theta,"delta":delta,"beta":beta}
             q_goal : goal state {"x":x,"y"=y,"theta"=theta,"delta":delta,"beta":beta}
         """
-        super().__init__(map, q_start, q_goal,goal_threshold, obstacles_color)
+        super().__init__(size, q_start, q_goal,goal_threshold, obstacles_color,end_points_colors)
         self.tree.add_weight(0)
         self.rewire_radius = rewire_radius
 
     def build(self,steps):
-        x_goal_old = None
+        self.map = self.init_map(name="RRT*")
+        x_best = None
         for i in range(steps):
             #get a random location sample in the map
             q_rand = self.sample_free()
@@ -44,7 +45,7 @@ class RRTStar(RRT):
                 #add x_new node to the tree
                 x_min.add_child(x_new)                
                 #visulize the updated tree
-                draw_line(self.map,trajectory(x_min.q,x_new.q),width=1,color=(0,0,0))
+                draw_line(self.map,trajectory(x_min.q,x_new.q),width=1,color=(0,0,0),name="RRT*")
                         
                 #rewrite the tree 
                 for x_near in X_near:
@@ -60,12 +61,28 @@ class RRTStar(RRT):
                             x_new.add_child(x_near)                
 
                             #visulize the updated tree
-                            delete_line(self.map,trajectory(x_near_parent.q,x_near.q),width=1)
-                            draw_line(self.map,trajectory(x_new.q,x_near.q),width=1)
+                            delete_line(self.map,trajectory(x_near_parent.q,x_near.q),width=1,name="RRT*")
+                            draw_line(self.map,trajectory(x_new.q,x_near.q),width=1,name="RRT*")
 
-                if self.in_goal_region(x_new.q):
-                    draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(0,0,255))
-                    draw_path(self.map,x_new,width=2,color=(0,0,255))
+                if self.in_goal_region(x_new.q):                        
+                    if x_best != None:
+                        if cost(x_new) < cost(x_best):
+                            #redraw map
+                            print("==> deleting old path")
+                            self.map[:][:][:] = 255
+                            draw_end_points(self.map,self.q_start,self.q_goal,self.ends_color,raduis=5,name="RRT*")
+                            draw_obstacles(self.map,self.obstacles_color,name="RRT*")
+                            redraw_tree(self.map,self.tree,color=(0,0,0),width=1,name="RRT*")
+                        else:
+                            continue
+                        
+                    #draw path
+                    print("===> new path cost: {:.3f}".format(cost(x_new)))
+                    print("===>drawing path")
+                    draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name="RRT*")
+                    draw_path(self.map,x_new,width=2,color=(255,0,0),name="RRT*")
+                    x_best = x_new
+
 
             if cv.waitKey(1) == ord('q'):
                 break

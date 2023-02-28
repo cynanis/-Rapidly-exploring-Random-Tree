@@ -1,4 +1,3 @@
-import pygame
 from .model import BicycleModel
 from .control2d import lateral_control_stanly
 from .cfg import params
@@ -24,7 +23,7 @@ def line(q1, q2):
 def trajectory(q1,q2):
     line_ = [q1]
     motion_model = BicycleModel(q_init=q1)
-    for i in range(10):
+    for i in range(params["step_samples"]):
         motion_model.update_state(q_state = line_[i])
         v = params["v_max"]
         delta = lateral_control_stanly(line_[i],q2,v)
@@ -56,18 +55,46 @@ def ecludian(q_n, q_r):
     x2, y2 = q_r["x"], q_r["y"]
     return ((x2-x1)**2 + (y2 - y1)**2)**0.5
 
+
+def draw_end_points(map,q_start,q_goal,color=(255,0,0),raduis=5,name="RRT"):
+    cv.circle(map,center=(q_start["x"],q_start["y"]),radius=raduis,color=tuple(reversed(color)),thickness=-1,lineType=8)
+    cv.circle(map,center=(q_goal["x"],q_goal["y"]),radius=raduis,color=tuple(reversed(color)),thickness=-1,lineType=8)
+    cv.imshow(name,map)
+
+def draw_obstacles(map,obstacle_color=(0,255,0),name="RRT"):
+    #draw obstacles
+    color = tuple(reversed(obstacle_color))
+    cv.rectangle(map,(255,255),(300,300),color,thickness=-1)
+    cv.rectangle(map,(150,150),(200,200),color,thickness=-1)
+    cv.rectangle(map,(100,300),(170,325),color,thickness=-1)
+    cv.rectangle(map,(100,80),(150,120),color,thickness=-1)
+    cv.rectangle(map,(10,80),(50,120),color,thickness=-1)
+    cv.rectangle(map,(210,320),(240,350),color,thickness=-1)
+    cv.circle(map,center=(400,60),radius=40,color=color,thickness=-1)
+    cv.circle(map,center=(250,60),radius=40,color=color,thickness=-1)
+    cv.imshow(name,map)
+    cv.waitKey(1)
+
+
+def redraw_tree(map,tree,color,width=1,name="RRT"):
+    if tree == None:
+        return
+    for node_ in tree.children:
+        redraw_tree(map,node_,color,width,name)
+        draw_line(map,trajectory(tree.q,node_.q),color=tuple(reversed(color)),width=width,name=name)
+
 def draw_branch(map,q_start, q_end,color = (0,0,0),width = 1,name="RRT"):
     # Drawing line
-    cv.line(map,pt1=(q_start["x"],q_start["y"]),pt2=(q_end["x"],q_end["y"]),color=color,thickness=width)
+    cv.line(map,pt1=(q_start["x"],q_start["y"]),pt2=(q_end["x"],q_end["y"]),color=tuple(reversed(color)),thickness=width)
     cv.imshow(name,map)
     
 def delete_branch(map,q_start, q_end,color = (255,255,255),width=1,name="RRT"):
     # delete line
-    draw_branch(map,q_start,q_end,color=(255,255,255),width=width,name=name)
+    draw_branch(map,q_start,q_end,color=color,width=width,name=name)
 
 def draw_point(map,q_point,color = (0,0,0),raduis = 0.5,width=1,name="RRT"):
     # Drawing point
-    cv.circle(map,center=(q_point["x"],q_point["y"]),radius = raduis,color=color,thickness=-1)
+    cv.circle(map,center=(q_point["x"],q_point["y"]),radius = raduis,color=tuple(reversed(color)),thickness=-1)
     cv.imshow(name,map)
      
 def draw_line(map,line,color = (0,0,0),width=1,name="RRT"):
@@ -94,6 +121,7 @@ def draw_path(map,x_goal,color=(0,0,255),width=2,name="RRT"):
     if x_goal.parent is not None:
         line = trajectory(x_goal.parent.q,x_goal.q)
         draw_line(map,line,color,width,name)
+        cv.waitKey(1)
         
 def delete_path(map,x_goal,color=(255,255,255),width=2,name="RRT"):
     draw_path(map,x_goal,color=color,width=width,name=name)
@@ -111,6 +139,6 @@ def draw_ellipse(map,q_start,q_goal,c_max,c_min,Q_center,color=(0,0,255),name="R
     # rotated_surf = pygame.transform.rotate(shape_surf, angle)
     # map.blit(rotated_surf, rotated_surf.get_rect(center = target_rect.center))
     cv.ellipse(img=map,center=(cx,cy),axes=(round(b/2),round(a/2)),angle=angle, startAngle=0,endAngle=360,
-                color=color,
+                color=tuple(reversed(color)),
                 thickness=1,
                 lineType=8)
