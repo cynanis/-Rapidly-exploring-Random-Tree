@@ -1,6 +1,6 @@
 import numpy as np
 from .cfg import params
-
+from .model import BicycleModel
 
 # def pure_pursuit(q_state,q_d,v):
 #         xd,yd,theta = q_d["x"],q_d["y"]
@@ -73,3 +73,14 @@ def lateral_control_stanly(q_state,q_d,v):
     
 def Longitudinal_control_pid(q_state,v_d):
     return v_d
+
+def steer(q1, q2,steps=params["step_samples"],v_d=params["v_max"]):
+    line = [q1]
+    motion_model = BicycleModel(q_init=q1)
+    for i in range(steps):
+        motion_model.update_state(q_state = line[i])
+        v = Longitudinal_control_pid(q_state=line[i],v_d=v_d)
+        delta = lateral_control_stanly(line[i],q2,v)
+        q_new = motion_model.forward(v,delta)
+        line.append(q_new)
+    return line

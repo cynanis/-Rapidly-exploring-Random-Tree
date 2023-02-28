@@ -4,7 +4,7 @@ import random
 from .utils import *
 from .tree import Node
 from .model import BicycleModel
-from .control2d import lateral_control_stanly
+from .control2d import steer
 from .cfg import params
 import cv2 as cv
 
@@ -35,31 +35,27 @@ class RRT:
             #find the nearest node to the random sample
             _,x_nearest = self.nearest_neighbor(x = self.tree,q_rand = q_rand)
             #genertate a steering trajectory from nearest node to random sample
-            q_new, trajectory = self.steer(x_nearest.q,q_rand)
+            q_new, line_n = self.steer(x_nearest.q,q_rand)
             #check for collision
-            if self.collision_free(trajectory): 
+            if self.collision_free(line_n): 
                 #add node to the tree
-                x_new = Node(q=q_new,w=c(trajectory))
+                x_new = Node(q=q_new,w=self.c(line_n))
                 x_nearest.add_child(x_new)
 
                 #the newly created tree branch
-                draw_line(self.map,trajectory,width=1,color=(0,0,0))
+                draw_line(self.map,line_n,width=1,color=(0,0,0))
                 #if goal reached draw path
                 if self.in_goal_region(x_new.q):
                     if x_best != None:
-                        if cost(x_new) < cost(x_best):
+                        if self.cost(x_new) < self.cost(x_best):
                             #redraw map
-                            print("==> deleting old path")
-                            self.map[:][:][:] = 255
-                            draw_end_points(self.map,self.q_start,self.q_goal,self.ends_color,raduis=5,name="RRT")
-                            draw_obstacles(self.map,self.obstacles_color,name="RRT")
-                            redraw_tree(self.map,self.tree,color=(0,0,0),width=1,name="RRT")
+                            self.reset_map(name="RRT")
                         else:
                             continue
                         
                     #draw path
-                    print("===> new path cost: {:.3f}".format(cost(x_new)))
-                    print("===>drawing path")
+                    print("===> new path cost: {:.3f}".format(self.cost(x_new)))
+                    print("===> drawing new path")
                     draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name="RRT")
                     draw_path(self.map,x_new,width=2,color=(255,0,0),name="RRT")
                     x_best = x_new
@@ -99,14 +95,9 @@ class RRT:
 
     
     def steer(self, q_nearest, q_rand):
-        trj = [q_nearest]
-        for i in range(params["step_samples"]):
-            self.motion_Model.update_state(q_state = trj[i])
-            v = params["v_max"]
-            delta = lateral_control_stanly(trj[i],q_rand,v)
-            trj.append(self.motion_Model.forward(v,delta))
+        line = steer(q_nearest,q_rand)
             
-        return trj[-1], trj
+        return line[-1], line
 
     def collision_free(self,line):
         for q in line:
@@ -126,6 +117,22 @@ class RRT:
         if ecludian(q,self.q_goal) <= self.goal_threshold+1:
             return True
         return False    
+
+    def cost(self,v):
+        if v is None:
+            return 0
+        elif v.w is not None:
+            return v.w + self.cost(v.parent)
+        else:
+            return self.c(self.steer(parent(v).q,v.q)) + self.cost(parent(v))
+
+    def c(self,line):
+        dist = 0
+        len_ = len(line)
+        for i in range(len_):
+            if i < len_ - 1:
+                dist += ecludian(line[i],line[i+1])
+        return dist
     
     def init_map(self,name="RRT"):
         # Initializing surface
@@ -133,6 +140,14 @@ class RRT:
         draw_end_points(map,self.q_start,self.q_goal,self.ends_color,raduis=self.goal_threshold,name=name)
         draw_obstacles(map,self.obstacles_color,name=name)
         return map
+    
+    def reset_map(self,name="RRT"):
+        print("==> deleting old path")
+        self.map[:][:][:] = 255
+        draw_end_points(self.map,self.q_start,self.q_goal,self.ends_color,raduis=5,name=name)
+        draw_obstacles(self.map,self.obstacles_color,name=name)
+        redraw_tree(self.map,self.tree,color=(0,0,0),width=1,name=name)
+    
     def tree_len(self,node):
         i = 0
         if node is not None:

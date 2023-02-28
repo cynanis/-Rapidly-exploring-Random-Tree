@@ -1,5 +1,5 @@
 from .model import BicycleModel
-from .control2d import lateral_control_stanly
+from .control2d import steer
 from .cfg import params
 import numpy as np
 import cv2 as cv
@@ -19,36 +19,8 @@ def line(q1, q2):
     line_  = [{"x":x, "y":round(a*(x-x_1)+y_1)} for x in range(start,end,step)]
     return line_
 
-
-def trajectory(q1,q2):
-    line_ = [q1]
-    motion_model = BicycleModel(q_init=q1)
-    for i in range(params["step_samples"]):
-        motion_model.update_state(q_state = line_[i])
-        v = params["v_max"]
-        delta = lateral_control_stanly(line_[i],q2,v)
-        line_.append(motion_model.forward(v,delta))
-        
-    return line_
-
 def parent(v):
     return v.parent
-
-def cost(v):
-    if v is None:
-        return 0
-    elif v.w is not None:
-        return v.w + cost(v.parent)
-    else:
-        return c(trajectory(parent(v).q,v.q)) + cost(parent(v))
-
-def c(line):
-    dist = 0
-    len_ = len(line)
-    for i in range(len_):
-        if i < len_ - 1:
-            dist += ecludian(line[i],line[i+1])
-    return dist
 
 def ecludian(q_n, q_r):
     x1 , y1, = q_n["x"],q_n["y"]
@@ -81,7 +53,7 @@ def redraw_tree(map,tree,color,width=1,name="RRT"):
         return
     for node_ in tree.children:
         redraw_tree(map,node_,color,width,name)
-        draw_line(map,trajectory(tree.q,node_.q),color=tuple(reversed(color)),width=width,name=name)
+        draw_line(map,steer(tree.q,node_.q),color=tuple(reversed(color)),width=width,name=name)
 
 def draw_branch(map,q_start, q_end,color = (0,0,0),width = 1,name="RRT"):
     # Drawing line
@@ -119,7 +91,7 @@ def draw_path(map,x_goal,color=(0,0,255),width=2,name="RRT"):
         return
     draw_path(map,x_goal.parent,color,width,name)
     if x_goal.parent is not None:
-        line = trajectory(x_goal.parent.q,x_goal.q)
+        line = steer(x_goal.parent.q,x_goal.q)
         draw_line(map,line,color,width,name)
         cv.waitKey(1)
         

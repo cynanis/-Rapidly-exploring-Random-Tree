@@ -4,8 +4,9 @@ from .utils import *
 from .tree import Node
 from .rrt import RRT
 
+
 class RRTStar(RRT):
-    def __init__(self,size, q_start, q_goal,goal_threshold=8, rewire_radius = 8, obstacles_color= (0,255,0,255),end_points_colors=(255,0,0)):
+    def __init__(self,size, q_start, q_goal,goal_threshold=8, rewire_radius = 5, obstacles_color= (0,255,0,255),end_points_colors=(255,0,0)):
         """ 
             q_start : starting state {"x":x,"y":y,"theta"=theta,"delta":delta,"beta":beta}
             q_goal : goal state {"x":x,"y"=y,"theta"=theta,"delta":delta,"beta":beta}
@@ -31,53 +32,51 @@ class RRTStar(RRT):
                  #connect the x_new node to the near x_min=x_near node that result in a minimum-cost c_min path
                 x_new = Node(q = q_new)
                 x_min = x_nearest
-                c_min = cost(x_nearest) + c(line_n)
+                c_min = self.cost(x_nearest) + self.c(line_n)
                 for x_near in X_near:
-                    line_n = trajectory(x_near.q,x_new.q)
-                    c_new = cost(x_near) + c(line_n)
+                    _,line_n = self.steer(x_near.q,x_new.q)
+                    c_new = self.cost(x_near) + self.c(line_n)
                     if self.collision_free(line_n):
                         if c_new < c_min:
                             x_min = x_near
                             c_min = c_new
                 
                 #update the the new node weight
-                x_new.add_weight(c(line_n))
+                _,line_n = self.steer(x_min.q,x_new.q)
+                x_new.add_weight(self.c(line_n))
                 #add x_new node to the tree
                 x_min.add_child(x_new)                
                 #visulize the updated tree
-                draw_line(self.map,trajectory(x_min.q,x_new.q),width=1,color=(0,0,0),name="RRT*")
+                draw_line(self.map,line_n,width=1,color=(0,0,0),name="RRT*")
                         
                 #rewrite the tree 
                 for x_near in X_near:
-                    c_near = cost(x_near)
-                    line_n2r = trajectory(x_new.q,x_near.q)
-                    c_new = cost(x_new) + c(line_n2r) 
+                    c_near = self.cost(x_near)
+                    line_n2r = steer(x_new.q,x_near.q)
+                    c_new = self.cost(x_new) + self.c(line_n2r) 
                     if self.collision_free(line_n2r):
                         #if near node achieve less cost change its parent 
                         if c_new < c_near:
                             x_near_parent = parent(x_near)
-                            x_near.parent.remove_child(x_near)
-                            x_near.add_weight(c(line_n2r))
+                            x_near_parent.remove_child(x_near)
+                            x_near.add_weight(self.c(line_n2r))
                             x_new.add_child(x_near)                
 
                             #visulize the updated tree
-                            delete_line(self.map,trajectory(x_near_parent.q,x_near.q),width=1,name="RRT*")
-                            draw_line(self.map,trajectory(x_new.q,x_near.q),width=1,name="RRT*")
+                            _,line_old = self.steer(x_near_parent.q,x_near.q)
+                            delete_line(self.map,line_old,width=1,name="RRT*")
+                            draw_line(self.map,line_n2r,width=1,name="RRT*")
 
                 if self.in_goal_region(x_new.q):                        
                     if x_best != None:
-                        if cost(x_new) < cost(x_best):
+                        if self.cost(x_new) < self.cost(x_best):
                             #redraw map
-                            print("==> deleting old path")
-                            self.map[:][:][:] = 255
-                            draw_end_points(self.map,self.q_start,self.q_goal,self.ends_color,raduis=5,name="RRT*")
-                            draw_obstacles(self.map,self.obstacles_color,name="RRT*")
-                            redraw_tree(self.map,self.tree,color=(0,0,0),width=1,name="RRT*")
+                            self.reset_map(name="RRT*")
                         else:
                             continue
                         
                     #draw path
-                    print("===> new path cost: {:.3f}".format(cost(x_new)))
+                    print("===> new path cost: {:.3f}".format(self.cost(x_new)))
                     print("===>drawing path")
                     draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name="RRT*")
                     draw_path(self.map,x_new,width=2,color=(255,0,0),name="RRT*")
