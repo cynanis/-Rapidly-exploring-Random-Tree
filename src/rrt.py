@@ -17,17 +17,18 @@ class RRT:
         """
         self.size = size
         self.ends_color = end_points_colors
-        self.tree = Node(q = q_start,w=0,u=0)
         self.q_start = q_start
         self.q_goal =  q_goal
         self.goal_threshold = goal_threshold
         self.obstacles_color = obstacles_color
+        self.tree = Node(q = q_start,w=0,u=0)
+        self.path = []
         self.motion_Model = BicycleModel(q_init=q_start)
         self.map = None
         
 
-    def build(self,steps):
-        self.map = self.init_map(name="RRT")
+    def build(self,steps,name="RRT"):
+        self.map = self.init_map(name=name)
         x_best = None
         for i in range(steps):
             #get a random location sample in the map
@@ -41,23 +42,25 @@ class RRT:
                 #add node to the tree
                 x_new = Node(q=q_new,w=self.c(line_n))
                 x_nearest.add_child(x_new)
-
+                
                 #the newly created tree branch
                 draw_line(self.map,line_n,width=1,color=(0,0,0))
+                
                 #if goal reached draw path
                 if self.in_goal_region(x_new.q):
                     if x_best != None:
-                        if self.cost(x_new) < self.cost(x_best):
-                            #redraw map
-                            self.reset_map(name="RRT")
-                        else:
+                        if self.cost(x_new) >= self.cost(x_best):
                             continue
-                        
                     #draw path
                     print("===> new path cost: {:.3f}".format(self.cost(x_new)))
                     print("===> drawing new path")
-                    draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name="RRT")
-                    draw_path(self.map,x_new,width=2,color=(255,0,0),name="RRT")
+                    draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name=name)
+                    #erase old path
+                    self.erase_path(self.path,name=name)
+                    #extract the new path from new goal
+                    self.path = self.extract_path(x_new)   
+                    #draw the new path 
+                    self.draw_path(self.path,color=(255,0,0),width=2,name=name)
                     x_best = x_new
 
             if cv.waitKey(1) == ord('q'):
@@ -141,12 +144,38 @@ class RRT:
         draw_obstacles(map,self.obstacles_color,name=name)
         return map
     
-    def reset_map(self,name="RRT"):
+    def reset_map(self,name="RRT",draw_tree=True):
         print("==> deleting old path")
         self.map[:][:][:] = 255
         draw_end_points(self.map,self.q_start,self.q_goal,self.ends_color,raduis=5,name=name)
         draw_obstacles(self.map,self.obstacles_color,name=name)
-        redraw_tree(self.map,self.tree,color=(0,0,0),width=1,name=name)
+        if draw_tree:
+            redraw_tree(self.map,self.tree,color=(0,0,0),width=1,name=name)
+    
+    def extract_path(self,x_goal):
+        path = []
+        if x_goal == None:
+            return path
+        elif x_goal.parent == None:
+            return path
+        
+        path.extend(self.extract_path(x_goal.parent))
+        path.append((x_goal.parent.q,x_goal.q))
+        return path
+
+    def draw_path(self,path,color=(255,0,0),width=2,name="RRT"):
+        for q1,q2 in path:
+            _,line = self.steer(q1,q2)
+            draw_line(self.map,line,color=color,width=width,name=name)
+            
+    def erase_path(self,path,color=(0,0,0),width=2,name="RRT"):
+        for q1,q2 in path:
+            _,line = self.steer(q1,q2)
+            delete_line(self.map,line,width=width,color=(255,255,255),name=name)
+            draw_line(self.map,line,color=color,width=1,name=name)   
+                    
+
+        return path
     
     def tree_len(self,node):
         i = 0

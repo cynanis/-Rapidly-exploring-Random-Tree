@@ -1,12 +1,13 @@
 import numpy as np
 from random import randint
+import copy
 from .utils import *
 from .tree import Node
 from .rrt import RRT
 
 
 class RRTStar(RRT):
-    def __init__(self,size, q_start, q_goal,goal_threshold=8, rewire_radius = 5, obstacles_color= (0,255,0,255),end_points_colors=(255,0,0)):
+    def __init__(self,size, q_start, q_goal,goal_threshold=8, rewire_radius = 6, obstacles_color= (0,255,0,255),end_points_colors=(255,0,0)):
         """ 
             q_start : starting state {"x":x,"y":y,"theta"=theta,"delta":delta,"beta":beta}
             q_goal : goal state {"x":x,"y"=y,"theta"=theta,"delta":delta,"beta":beta}
@@ -15,9 +16,10 @@ class RRTStar(RRT):
         self.tree.add_weight(0)
         self.rewire_radius = rewire_radius
 
-    def build(self,steps):
-        self.map = self.init_map(name="RRT*")
-        x_best = None
+    def build(self,steps,name="RRT*"):
+        self.map = self.init_map(name=name)
+        x_goal = None
+        c_goal = np.inf
         for i in range(steps):
             #get a random location sample in the map
             q_rand = self.sample_free()
@@ -47,40 +49,62 @@ class RRTStar(RRT):
                 #add x_new node to the tree
                 x_min.add_child(x_new)                
                 #visulize the updated tree
-                draw_line(self.map,line_n,width=1,color=(0,0,0),name="RRT*")
+                draw_line(self.map,line_n,width=1,color=(0,0,0),name=name)
                         
                 #rewrite the tree 
                 for x_near in X_near:
                     c_near = self.cost(x_near)
-                    line_n2r = steer(x_new.q,x_near.q)
+                    _,line_n2r = self.steer(x_new.q,x_near.q)
                     c_new = self.cost(x_new) + self.c(line_n2r) 
                     if self.collision_free(line_n2r):
+                        
                         #if near node achieve less cost change its parent 
                         if c_new < c_near:
-                            x_near_parent = parent(x_near)
-                            x_near_parent.remove_child(x_near)
-                            x_near.add_weight(self.c(line_n2r))
-                            x_new.add_child(x_near)                
+                            #replace rewriten edges in path
+                            if (x_near.parent.q, x_near.q) in self.path:
+                                # erase x_near from path
+                                path_to_x_near_old = self.extract_path(x_near)
+                                self.erase_path(path_to_x_near_old,color=(0,0,0),width=2,name=name)    
+                                idx = len(path_to_x_near_old)
+                                self.path = self.path[idx:]                    
 
-                            #visulize the updated tree
-                            _,line_old = self.steer(x_near_parent.q,x_near.q)
-                            delete_line(self.map,line_old,width=1,name="RRT*")
-                            draw_line(self.map,line_n2r,width=1,name="RRT*")
+                                # change x_near parent in the tree
+                                x_near.change_parent(to=x_new)
+                                x_near.add_weight(self.c(line_n2r))
 
-                if self.in_goal_region(x_new.q):                        
-                    if x_best != None:
-                        if self.cost(x_new) < self.cost(x_best):
-                            #redraw map
-                            self.reset_map(name="RRT*")
-                        else:
+                                # replace the erased x_near path with x_new path
+                                print("==> rewrite path")
+                                path_to_x_near_new = self.extract_path(x_near)
+                                self.path = path_to_x_near_new + self.path
+                                self.draw_path(self.path,color=(255,0,0),width=2,name=name)
+
+                            else:
+                                # erase x_near branch from map
+                                _,line_old = self.steer(x_near.parent.q,x_near.q)
+                                delete_line(self.map,line_old,width=1,color=(255,255,255),name=name)
+                                # change x_near parent in the tree
+                                x_near.change_parent(to=x_new)
+                                x_near.add_weight(self.c(line_n2r))
+                                #visulize the updated brach
+                                draw_line(self.map,line_n2r,color=(0,0,0),width=1,name=name)
+                    
+                if self.in_goal_region(x_new.q):   
+                    if x_goal != None:
+                        if self.cost(x_new) >= self.cost(x_goal):
                             continue
                         
-                    #draw path
+                    #erase prev path
+                    self.erase_path(self.path,color=(0,0,0),width=2,name=name)
+                    
+                    #extract new path
+                    self.path = self.extract_path(x_new)
+
+                    #draw new path
                     print("===> new path cost: {:.3f}".format(self.cost(x_new)))
-                    print("===>drawing path")
-                    draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name="RRT*")
-                    draw_path(self.map,x_new,width=2,color=(255,0,0),name="RRT*")
-                    x_best = x_new
+                    print("===> drawing new path")
+                    self.draw_path(self.path,color=(255,0,0),width=2,name=name)
+                    draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name=name)
+                    x_goal = x_new
 
 
             if cv.waitKey(1) == ord('q'):

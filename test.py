@@ -15,7 +15,7 @@ map_size = (450,450,3)
 
 #draw star and goal points
 q_start={"x":100,"y":20,"theta":0.3,"delta":0.1,"beta":0.01}
-q_goal={"x":350,"y":420,"theta":0,"delta":0,"beta":0}
+q_goal={"x":350,"y":370,"theta":0,"delta":0,"beta":0}
 #goal color
 color = (255,0,0)
 #draw obstacles

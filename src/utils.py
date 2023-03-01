@@ -42,7 +42,7 @@ def draw_obstacles(map,obstacle_color=(0,255,0),name="RRT"):
     cv.rectangle(map,(100,80),(150,120),color,thickness=-1)
     cv.rectangle(map,(10,80),(50,120),color,thickness=-1)
     cv.rectangle(map,(210,320),(240,350),color,thickness=-1)
-    cv.circle(map,center=(400,60),radius=40,color=color,thickness=-1)
+    cv.circle(map,center=(340,60),radius=40,color=color,thickness=-1)
     cv.circle(map,center=(250,60),radius=40,color=color,thickness=-1)
     cv.imshow(name,map)
     cv.waitKey(1)

@@ -3,6 +3,7 @@ from random import randint
 from .utils import *
 from .tree import Node
 from .rrt_star import RRTStar
+import copy
 
 class InformedRRTStar(RRTStar):
     def __init__(self,size, q_start, q_goal,goal_threshold=8, rewire_radius = 8, obstacles_color= (0,255,0,255),end_points_colors=(255,0,0)):
@@ -13,12 +14,12 @@ class InformedRRTStar(RRTStar):
         super().__init__(size, q_start, q_goal,goal_threshold,rewire_radius, obstacles_color,end_points_colors)
         self.sample_config = self.hyperellipsoid_config()
         
-    def build(self,steps):
-        self.map = self.init_map(name="informed RRT*")
+    def build(self,steps,name="Informed RRT*"):
+        self.map = self.init_map(name=name)
         X_soln = set()
         for i in range(steps):
             #the transverse diameter is cbest of the special hyperellipsoid
-            _, c_best = self.transverse_diameter(X_soln)
+            x_best, c_best = self.transverse_diameter(X_soln)
             #get a random location sample in the map
             q_rand = self.sample(c_best)
             #find the nearest node to the random sample
@@ -48,41 +49,68 @@ class InformedRRTStar(RRTStar):
                 #add x_new node to the tree
                 x_min.add_child(x_new)                
                 #visulize the updated tree
-                draw_line(self.map,line_n,width=1,color=(0,0,0),name="informed RRT*")
+                draw_line(self.map,line_n,width=1,color=(0,0,0),name=name)
                         
                 #rewrite the tree 
                 for x_near in X_near:
                     c_near = self.cost(x_near)
-                    line_n2r = steer(x_new.q,x_near.q)
+                    _,line_n2r = self.steer(x_new.q,x_near.q)
                     c_new = self.cost(x_new) + self.c(line_n2r) 
                     if self.collision_free(line_n2r):
+                        
                         #if near node achieve less cost change its parent 
                         if c_new < c_near:
-                            x_near_parent = parent(x_near)
-                            x_near_parent.remove_child(x_near)
-                            x_near.add_weight(self.c(line_n2r))
-                            x_new.add_child(x_near)                
+                            #replace rewriten edges in path
+                            if (x_near.parent.q, x_near.q) in self.path:
+                                # erase x_near from path
+                                path_to_x_near_old = self.extract_path(x_near)
+                                self.erase_path(path_to_x_near_old,color=(0,0,0),width=2,name=name)    
+                                idx = len(path_to_x_near_old)
+                                self.path = self.path[idx:]                    
 
-                            #visulize the updated tree
-                            _,line_old = self.steer(x_near_parent.q,x_near.q)
-                            delete_line(self.map,line_old,width=1,name="informed RRT*")
-                            draw_line(self.map,line_n2r,width=1,name="informed RRT*")
+                                # change x_near parent in the tree
+                                x_near.change_parent(to=x_new)
+                                x_near.add_weight(self.c(line_n2r))
 
+                                # replace the erased x_near path with x_new path
+                                print("==> rewrite path")
+                                path_to_x_near_new = self.extract_path(x_near)
+                                self.path = path_to_x_near_new + self.path
+                                self.draw_path(self.path,color=(255,0,0),width=2,name=name)
+
+                            else:
+                                # erase x_near branch from map
+                                _,line_old = self.steer(x_near.parent.q,x_near.q)
+                                delete_line(self.map,line_old,width=1,color=(255,255,255),name=name)
+                                # change x_near parent in the tree
+                                x_near.change_parent(to=x_new)
+                                x_near.add_weight(self.c(line_n2r))
+                                #visulize the updated brach
+                                draw_line(self.map,line_n2r,color=(0,0,0),width=1,name=name)
+
+                #check goal region
                 if self.in_goal_region(x_new.q):
                     X_soln.add(x_new)
-                    # if x_new has the lowest cost draw the path
+                    
+                    # get node goal with lowest cost
                     x_best,c_best = self.transverse_diameter(X_soln)
+                    
+                    # if x_new is lowest cost node goal draw path
                     if x_best == x_new:
-                        print("===> cost: {:.3f}".format(c_best))
-                        if X_soln.__len__() > 1:
-                            #redraw tree and new path
-                            self.reset_map(name="informed RRT*")
+                        #erase prev path
+                        self.erase_path(self.path,color=(0,0,0),width=2,name=name)
+                        
+                        #extract new path
+                        self.path = self.extract_path(x_new)
 
+                        #draw new path
+                        print("===> new path cost: {:.3f}".format(self.cost(x_new)))
                         print("===> drawing new path")
+                        self.draw_path(self.path,color=(255,0,0),width=2,name=name)
+                        draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name=name)
                         cmin, Q_center, _ = self.sample_config
                         draw_ellipse(self.map,self.q_start,self.q_goal,c_best,cmin,Q_center)
-                        draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name="informed RRT*")
-                        draw_path(self.map,x_new,width=2,color=(0,0,255),name="informed RRT*")
+
                 # return self.tree
                 
             if cv.waitKey(1) == ord('q'):

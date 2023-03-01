@@ -17,3 +17,9 @@ class Node:
     
     def add_weight(self,w):
         self.w = w    
+        
+    def change_parent(self,to):
+        if self.parent != None:
+            self.parent.remove_child(self)
+        to.add_child(self)
+        self.parent = to
