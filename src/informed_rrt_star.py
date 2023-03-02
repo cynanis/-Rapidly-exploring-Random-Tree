@@ -30,7 +30,8 @@ class InformedRRTStar(RRTStar):
             #check for collision
             if self.collision_free(line_n): 
                 # find list of x nodes that lie in the circle centerd at q_new
-                X_near = self.near(self.tree,q_new,self.rewire_radius)     
+                r = self.search_raduis(self.tree,self.rewire_radius)
+                X_near = self.near(self.tree,q_new,r)  
                  #connect the x_new node to the near x_min=x_near node that result in a minimum-cost c_min path
                 x_new = Node(q = q_new)
                 x_min = x_nearest
@@ -71,13 +72,14 @@ class InformedRRTStar(RRTStar):
                                 # change x_near parent in the tree
                                 x_near.change_parent(to=x_new)
                                 x_near.add_weight(self.c(line_n2r))
-
                                 # replace the erased x_near path with x_new path
                                 print("==> rewrite path")
                                 path_to_x_near_new = self.extract_path(x_near)
                                 self.path = path_to_x_near_new + self.path
-                                self.draw_path(self.path,color=(255,0,0),width=2,name=name)
-
+                                #draw the new path
+                                self.draw_path(self.path,color=(255,0,0),width=2,name=name,c_best = self.cost(x_best))
+                                cmin, Q_center, _ = self.sample_config  
+                                draw_ellipse(self.map,self.q_start,self.q_goal,c_best,cmin,Q_center)
                             else:
                                 # erase x_near branch from map
                                 _,line_old = self.steer(x_near.parent.q,x_near.q)

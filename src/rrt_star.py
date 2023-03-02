@@ -30,7 +30,8 @@ class RRTStar(RRT):
             #check for collision
             if self.collision_free(line_n): 
                 # find list of x nodes that lie in the circle centerd at q_new
-                X_near = self.near(self.tree,q_new,self.rewire_radius)     
+                r = self.search_raduis(self.tree,self.rewire_radius)
+                X_near = self.near(self.tree,q_new,r)     
                  #connect the x_new node to the near x_min=x_near node that result in a minimum-cost c_min path
                 x_new = Node(q = q_new)
                 x_min = x_nearest
@@ -110,8 +111,10 @@ class RRTStar(RRT):
             if cv.waitKey(1) == ord('q'):
                 break
         return self.tree            
-                
-    def near(self,x,q,r):
+              
+    
+    @staticmethod
+    def near(x,q,r):
         """
         returns list of nodes lie in the cirlce centered at q with raduis r
 
@@ -128,9 +131,11 @@ class RRTStar(RRT):
         if(dist < r):
             X_near.append(x)
         for x_ in x.children:
-            X_near.extend(self.near(x_,q,r))
-            
+            X_near.extend(RRTStar.near(x_,q,r))
         return X_near
         
-        
-    
+    @staticmethod
+    def search_raduis(tree,rewire_raduis):
+        n = RRT.tree_len(tree) + 1
+        r = max(min(rewire_raduis * np.sqrt((np.log(n) / n)),params["v_max"]*params["sample_time"]*params["step_samples"]),2)
+        return r

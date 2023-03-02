@@ -23,9 +23,9 @@ def parent(v):
     return v.parent
 
 def ecludian(q_n, q_r):
-    x1 , y1, = q_n["x"],q_n["y"]
-    x2, y2 = q_r["x"], q_r["y"]
-    return ((x2-x1)**2 + (y2 - y1)**2)**0.5
+    x1 , y1, theta1 = q_n["x"],q_n["y"],q_n["theta"]
+    x2, y2, theta2 = q_r["x"], q_r["y"],q_r["theta"]
+    return ((x2-x1)**2 + (y2 - y1)**2 + 0.2*(theta2 - theta1)**2)**0.5
 
 
 def draw_end_points(map,q_start,q_goal,color=(255,0,0),raduis=5,name="RRT"):

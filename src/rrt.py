@@ -177,12 +177,13 @@ class RRT:
 
         return path
     
-    def tree_len(self,node):
+    @staticmethod
+    def tree_len(node):
         i = 0
         if node is not None:
             i += 1
         for node_ in node.children:
-            i += self.tree_len(node_)
+            i += RRT.tree_len(node_)
             
         return i
 
