@@ -96,10 +96,9 @@ class RRT:
         return min_dist,x_nearest
              
 
-    
-    def steer(self, q_nearest, q_rand):
+    @staticmethod
+    def steer(q_nearest, q_rand):
         line = steer(q_nearest,q_rand)
-            
         return line[-1], line
 
     def collision_free(self,line):

@@ -77,7 +77,7 @@ class InformedRRTStar(RRTStar):
                                 path_to_x_near_new = self.extract_path(x_near)
                                 self.path = path_to_x_near_new + self.path
                                 #draw the new path
-                                self.draw_path(self.path,color=(255,0,0),width=2,name=name,c_best = self.cost(x_best))
+                                self.draw_path(self.path,color=(255,0,0),width=2,name=name)
                                 cmin, Q_center, _ = self.sample_config  
                                 draw_ellipse(self.map,self.q_start,self.q_goal,c_best,cmin,Q_center)
                             else:
