@@ -61,33 +61,7 @@ class RRTStar(RRT):
                         
                         #if near node achieve less cost change its parent 
                         if c_new < c_near:
-                            #replace rewriten edges in path
-                            if (x_near.parent.q, x_near.q) in self.path:
-                                # erase x_near from path
-                                path_to_x_near_old = self.extract_path(x_near)
-                                self.erase_path(path_to_x_near_old,color=(0,0,0),width=2,name=name)    
-                                idx = len(path_to_x_near_old)
-                                self.path = self.path[idx:]                    
-
-                                # change x_near parent in the tree
-                                x_near.change_parent(to=x_new)
-                                x_near.add_weight(self.c(line_n2r))
-
-                                # replace the erased x_near path with x_new path
-                                print("==> rewrite path")
-                                path_to_x_near_new = self.extract_path(x_near)
-                                self.path = path_to_x_near_new + self.path
-                                self.draw_path(self.path,color=(255,0,0),width=2,name=name)
-
-                            else:
-                                # erase x_near branch from map
-                                _,line_old = self.steer(x_near.parent.q,x_near.q)
-                                delete_line(self.map,line_old,width=1,color=(255,255,255),name=name)
-                                # change x_near parent in the tree
-                                x_near.change_parent(to=x_new)
-                                x_near.add_weight(self.c(line_n2r))
-                                #visulize the updated brach
-                                draw_line(self.map,line_n2r,color=(0,0,0),width=1,name=name)
+                           self.rewrite(x_near,x_new,line_n2r,name)
                     
                 if self.in_goal_region(x_new.q):   
                     if x_goal != None:
@@ -107,7 +81,7 @@ class RRTStar(RRT):
                     draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name=name)
                     x_goal = x_new
 
-
+            cv.imshow(name,self.map)
             if cv.waitKey(1) == ord('q'):
                 break
         return self.tree            
@@ -139,3 +113,41 @@ class RRTStar(RRT):
         n = RRT.tree_len(tree) + 1
         r = max(min(rewire_raduis * np.sqrt((np.log(n) / n)),params["v_max"]*params["sample_time"]*params["step_samples"]),2)
         return r
+    
+    def rewrite(self,x_near,x_new,line_n2r,name="RRT*",config=None,c_best=None):
+        #replace rewriten edges in path
+        if (x_near.parent.q, x_near.q) in self.path:
+            
+            #store path to x_near before rewrite
+            path_to_x_near = self.extract_path(x_near)
+
+            # erase path to x_near from map
+            self.erase_path(path_to_x_near,color=(0,0,0),width=2,name=name)    
+            idx = len(path_to_x_near)
+
+            # change x_near parent in the tree
+            x_near.change_parent(to=x_new)
+            x_near.add_weight(self.c(line_n2r))
+            
+            #add the new x_near portion of the path to the whole path
+            print("==> rewrite path")
+            self.path = self.extract_path(x_near) + self.path[idx:] 
+
+            #draw the new path
+            self.draw_path(self.path,color=(255,0,0),width=2,name=name)
+            if config != None:
+                cmin, Q_center, _ = config
+                draw_ellipse(self.map,self.q_start,self.q_goal,c_best,cmin,Q_center)
+        else:
+            #old brach
+            _,line_r = self.steer(x_near.parent.q,x_near.q)
+            
+            # erase old x_near branch from map
+            delete_line(self.map,line_r,width=1,color=(255,255,255),name=name)
+            
+            # change x_near parent in the tree
+            x_near.change_parent(to=x_new)
+            x_near.add_weight(self.c(line_n2r))
+
+            # draw the new x_near branch 
+            draw_line(self.map,line_n2r,color=(0,0,0),width=1,name=name)

@@ -57,12 +57,15 @@ class RRT:
                     draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name=name)
                     #erase old path
                     self.erase_path(self.path,name=name)
+                    cv.imshow(name,self.map)
                     #extract the new path from new goal
                     self.path = self.extract_path(x_new)   
                     #draw the new path 
+                    cv.waitKey(5000)
                     self.draw_path(self.path,color=(255,0,0),width=2,name=name)
                     x_best = x_new
-
+                    
+            cv.imshow(name,self.map)
             if cv.waitKey(1) == ord('q'):
                 break
             

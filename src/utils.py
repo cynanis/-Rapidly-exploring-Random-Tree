@@ -45,7 +45,7 @@ def draw_obstacles(map,obstacle_color=(0,255,0),name="RRT"):
     cv.circle(map,center=(340,60),radius=40,color=color,thickness=-1)
     cv.circle(map,center=(250,60),radius=40,color=color,thickness=-1)
     cv.imshow(name,map)
-    cv.waitKey(1)
+    # cv.waitKey(1)
 
 
 def redraw_tree(map,tree,color,width=1,name="RRT"):
@@ -58,7 +58,7 @@ def redraw_tree(map,tree,color,width=1,name="RRT"):
 def draw_branch(map,q_start, q_end,color = (0,0,0),width = 1,name="RRT"):
     # Drawing line
     cv.line(map,pt1=(q_start["x"],q_start["y"]),pt2=(q_end["x"],q_end["y"]),color=tuple(reversed(color)),thickness=width)
-    cv.imshow(name,map)
+    #cv.imshow(name,map)
     
 def delete_branch(map,q_start, q_end,color = (255,255,255),width=1,name="RRT"):
     # delete line
@@ -67,7 +67,7 @@ def delete_branch(map,q_start, q_end,color = (255,255,255),width=1,name="RRT"):
 def draw_point(map,q_point,color = (0,0,0),raduis = 0.5,width=1,name="RRT"):
     # Drawing point
     cv.circle(map,center=(q_point["x"],q_point["y"]),radius = raduis,color=tuple(reversed(color)),thickness=-1)
-    cv.imshow(name,map)
+    #cv.imshow(name,map)
      
 def draw_line(map,line,color = (0,0,0),width=1,name="RRT"):
     len_ = len(line)

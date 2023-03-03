@@ -61,34 +61,7 @@ class InformedRRTStar(RRTStar):
                         
                         #if near node achieve less cost change its parent 
                         if c_new < c_near:
-                            #replace rewriten edges in path
-                            if (x_near.parent.q, x_near.q) in self.path:
-                                # erase x_near from path
-                                path_to_x_near_old = self.extract_path(x_near)
-                                self.erase_path(path_to_x_near_old,color=(0,0,0),width=2,name=name)    
-                                idx = len(path_to_x_near_old)
-                                self.path = self.path[idx:]                    
-
-                                # change x_near parent in the tree
-                                x_near.change_parent(to=x_new)
-                                x_near.add_weight(self.c(line_n2r))
-                                # replace the erased x_near path with x_new path
-                                print("==> rewrite path")
-                                path_to_x_near_new = self.extract_path(x_near)
-                                self.path = path_to_x_near_new + self.path
-                                #draw the new path
-                                self.draw_path(self.path,color=(255,0,0),width=2,name=name)
-                                cmin, Q_center, _ = self.sample_config  
-                                draw_ellipse(self.map,self.q_start,self.q_goal,c_best,cmin,Q_center)
-                            else:
-                                # erase x_near branch from map
-                                _,line_old = self.steer(x_near.parent.q,x_near.q)
-                                delete_line(self.map,line_old,width=1,color=(255,255,255),name=name)
-                                # change x_near parent in the tree
-                                x_near.change_parent(to=x_new)
-                                x_near.add_weight(self.c(line_n2r))
-                                #visulize the updated brach
-                                draw_line(self.map,line_n2r,color=(0,0,0),width=1,name=name)
+                                self.rewrite(x_near,x_new,line_n2r,name,self.sample_config,c_best)
 
                 #check goal region
                 if self.in_goal_region(x_new.q):
@@ -112,11 +85,10 @@ class InformedRRTStar(RRTStar):
                         draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name=name)
                         cmin, Q_center, _ = self.sample_config
                         draw_ellipse(self.map,self.q_start,self.q_goal,c_best,cmin,Q_center)
-
-                # return self.tree
-                
-            if cv.waitKey(1) == ord('q'):
-                break
+    
+                cv.imshow(name,self.map)
+                if cv.waitKey(1) == ord('q'):
+                    break
                 
 
     
