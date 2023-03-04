@@ -1,21 +1,21 @@
 import numpy as np
 from random import randint
-from .utils import *
 from .tree import Node
 from .rrt_star import RRTStar
+from .cfg import params
 import copy
 
 class InformedRRTStar(RRTStar):
-    def __init__(self,size, q_start, q_goal,goal_threshold=8, rewire_radius = 8, obstacles_color= (0,255,0,255),end_points_colors=(255,0,0)):
+    def __init__(self,map,goal_threshold=8, rewire_radius = 6, name="Informed RRT*"):        
         """ 
             q_start : starting state {"x":x,"y":y,"theta"=theta,"delta":delta,"beta":beta}
             q_goal : goal state {"x":x,"y"=y,"theta"=theta,"delta":delta,"beta":beta}
         """
-        super().__init__(size, q_start, q_goal,goal_threshold,rewire_radius, obstacles_color,end_points_colors)
+        super().__init__(map,goal_threshold,rewire_radius,name)
         self.sample_config = self.hyperellipsoid_config()
         
-    def build(self,steps,name="Informed RRT*"):
-        self.map = self.init_map(name=name)
+    def build(self,steps):
+
         X_soln = set()
         for i in range(steps):
             #the transverse diameter is cbest of the special hyperellipsoid
@@ -50,7 +50,7 @@ class InformedRRTStar(RRTStar):
                 #add x_new node to the tree
                 x_min.add_child(x_new)                
                 #visulize the updated tree
-                draw_line(self.map,line_n,width=1,color=(0,0,0),name=name)
+                self.map.draw_line(line_n,width=1,color=self.map.tree_color)
                         
                 #rewrite the tree 
                 for x_near in X_near:
@@ -62,7 +62,7 @@ class InformedRRTStar(RRTStar):
                         
                         #if near node achieve less cost change its parent 
                         if c_new < c_near:
-                                self.rewrite(x_near,x_new,line_n2r,name,self.sample_config,c_best)
+                                self.rewrite(x_near,x_new,line_n2r,self.sample_config,c_best)
 
                 #check goal region
                 if self.in_goal_region(x_new.q):
@@ -72,21 +72,19 @@ class InformedRRTStar(RRTStar):
                     # if x_new is lowest cost node goal draw path
                     if x_best == x_new:
                         #erase prev path
-                        self.erase_path(self.path,color=(0,0,0),width=2,name=name)                   
-                        #extract new path
-                        self.path = self.extract_path(x_new)
-                        #draw new path
-                        print("===> new path cost: {:.3f}".format(self.cost(x_new)))
-                        print("===> drawing new path")
-                        self.draw_path(self.path,color=(255,0,0),width=2,name=name)
-                        draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name=name)
+                        self.map.draw_point(self.map.q_goal,raduis=self.map.end_points_raduis,color=self.map.path_color)
+                        #erase old path
+                        self.map.erase_path(self.path,width=2)
+                        #extract the new path from new goal
+                        self.path = self.extract_path(x_new)   
+                        #draw the new path
+                        print("===> draw new path")
+                        self.map.draw_path(self.path,width=2)
                         cmin, Q_center, _ = self.sample_config
-                        draw_ellipse(self.map,self.q_start,self.q_goal,c_best,cmin,Q_center)
+                        self.map.draw_ellipse(self.map.q_start,self.map.q_goal,c_best,cmin,Q_center)
     
-                if i%20 ==0:
-                    cv.imshow(name,self.map)
-                    if cv.waitKey(1) == ord('q'):
-                        break
+                if i%20 == 0:
+                    self.map.show_map(self.name)
                 
 
     
@@ -117,8 +115,8 @@ class InformedRRTStar(RRTStar):
 
     def rotaion_to_world_frame(self):
         a1 = np.array([
-                        [(self.q_goal["x"]-self.q_start["x"])/ecludian(self.q_goal,self.q_start)],
-                        [(self.q_goal["y"]-self.q_start["y"])/ecludian(self.q_goal,self.q_start)],
+                        [(self.map.q_goal["x"]-self.map.q_start["x"])/self.ecludian(self.map.q_goal,self.map.q_start)],
+                        [(self.map.q_goal["y"]-self.map.q_start["y"])/self.ecludian(self.map.q_goal,self.map.q_start)],
                         [0.0],
                     ])
         I1 = np.array([[1.0],[0],[0]])
@@ -134,9 +132,9 @@ class InformedRRTStar(RRTStar):
                 return np.array([[x],[y],[0.0]])
     
     def hyperellipsoid_config(self):
-            c_min = ecludian(self.q_goal,self.q_start)
-            Q_center = np.array([[(self.q_start["x"]+self.q_goal["x"]) / 2.0],
-                            [(self.q_start["y"]+self.q_goal["y"]) / 2.0], [0.0]])
+            c_min = self.ecludian(self.map.q_goal,self.map.q_start)
+            Q_center = np.array([[(self.map.q_start["x"]+self.map.q_goal["x"]) / 2.0],
+                            [(self.map.q_start["y"]+self.map.q_goal["y"]) / 2.0], [0.0]])
             C = self.rotaion_to_world_frame()
             return (c_min,Q_center,C)
     

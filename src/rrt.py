@@ -1,7 +1,6 @@
 import numpy as np
 from random import randint
 import random
-from .utils import *
 from .tree import Node
 from .model import BicycleModel
 from .control2d import steer
@@ -9,26 +8,18 @@ from .cfg import params
 import cv2 as cv
 
 class RRT:
-    def __init__(self, size, q_start, q_goal,goal_threshold=8, obstacles_color= (0,255,0,255),end_points_colors=(255,0,0)):
-        """ 
-            q_start : starting state {"x":x,"y":y,"theta"=theta,"delta":delta,"beta":beta}
-            q_goal : goal state {"x":x,"y"=y,"theta"=theta,"delta":delta,"beta":beta}
-        
-        """
-        self.size = size
-        self.ends_color = end_points_colors
-        self.q_start = q_start
-        self.q_goal =  q_goal
-        self.goal_threshold = goal_threshold
-        self.obstacles_color = obstacles_color
-        self.tree = Node(q = q_start,w=0,u=0)
-        self.path = []
-        self.motion_Model = BicycleModel(q_init=q_start)
-        self.map = None
-        
+    def __init__(self,map,goal_threshold=8,name="RRT"):
 
-    def build(self,steps,name="RRT"):
-        self.map = self.init_map(name=name)
+
+        self.goal_threshold = goal_threshold
+        self.tree = Node(q = map.q_start,w=0,u=0)
+        self.map = map
+        self.name=name
+        self.map_img = map.map_img
+        self.path = []
+
+
+    def build(self,steps):
         x_best = None
         for i in range(steps):
             #get a random location sample in the map
@@ -44,7 +35,7 @@ class RRT:
                 x_nearest.add_child(x_new)
                 
                 #the newly created tree branch
-                draw_line(self.map,line_n,width=1,color=(0,0,0))
+                self.map.draw_line(line_n,color=self.map.tree_color,width=1)
                 
                 #if goal reached draw path
                 if self.in_goal_region(x_new.q):
@@ -52,28 +43,25 @@ class RRT:
                         if self.cost(x_new) >= self.cost(x_best):
                             continue
                     #draw path
-                    print("===> new path cost: {:.3f}".format(self.cost(x_new)))
                     print("===> drawing new path")
-                    draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name=name)
+                    self.map.draw_point(self.map.q_goal,raduis=self.map.end_points_raduis,color=self.map.ends_color)
                     #erase old path
-                    self.erase_path(self.path,name=name)
+                    self.map.erase_path(self.path,width=2)
                     #extract the new path from new goal
                     self.path = self.extract_path(x_new)   
                     #draw the new path 
-                    self.draw_path(self.path,color=(255,0,0),width=2,name=name)
+                    self.map.draw_path(self.path,width=2)
                     x_best = x_new
 
             if i%20 == 0:
-                cv.imshow(name,self.map)
-                if cv.waitKey(1) == ord('q'):
-                    break
+                self.map.show_map(self.name)
             
         return self.tree
 
 
 
     def sample_free(self):
-        q_rand = {"x":randint(1,self.map.shape[1]-1),"y":randint(1,self.map.shape[0]-1),
+        q_rand = {"x":randint(1,self.map_img.shape[1]-1),"y":randint(1,self.map_img.shape[0]-1),
                   "theta":random.uniform(-np.pi,np.pi)}
         if self.point_collision_free(q_rand):
             return q_rand
@@ -84,7 +72,7 @@ class RRT:
         x_nearest = None
         min_dist = None
         if x is not None:
-            temp_dist = ecludian(x.q,q_rand)
+            temp_dist = self.ecludian(x.q,q_rand)
             if temp_dist < e_dist:
                 x_nearest = x
                 min_dist = temp_dist
@@ -111,16 +99,22 @@ class RRT:
     
     def point_collision_free(self,q):
         x, y = q["x"],q["y"]
-        if (x>0 and y>0) and x < self.map.shape[1] and y < self.map.shape[0]:
-            if not np.array_equal(self.map[y][x],self.obstacles_color):
+        if (x>0 and y>0) and x < self.map_img.shape[1] and y < self.map_img.shape[0]:
+            if not np.array_equal(self.map_img[y][x],self.map.obstacles_color):
                 return True
         return False
         
     def in_goal_region(self,q):
       
-        if ecludian(q,self.q_goal) <= self.goal_threshold+1:
+        if self.ecludian(q,self.map.q_goal) <= self.goal_threshold+1:
             return True
-        return False    
+        return False   
+    
+    @staticmethod
+    def ecludian(q_n, q_r):
+        x1 , y1, theta1 = q_n["x"],q_n["y"],q_n["theta"]
+        x2, y2, theta2 = q_r["x"], q_r["y"],q_r["theta"]
+        return ((x2-x1)**2 + (y2 - y1)**2 + 0.2*(theta2 - theta1)**2)**0.5 
 
     def cost(self,v):
         if v is None:
@@ -128,30 +122,17 @@ class RRT:
         elif v.w is not None:
             return v.w + self.cost(v.parent)
         else:
-            return self.c(self.steer(parent(v).q,v.q)) + self.cost(parent(v))
+            return self.c(self.steer(v.parent.q,v.q)) + self.cost(v.parent)
 
     def c(self,line):
         dist = 0
         len_ = len(line)
         for i in range(len_):
             if i < len_ - 1:
-                dist += ecludian(line[i],line[i+1])
+                dist += self.ecludian(line[i],line[i+1])
         return dist
     
-    def init_map(self,name="RRT"):
-        # Initializing surface
-        map = np.ones(self.size, dtype=np.uint8)*255
-        draw_end_points(map,self.q_start,self.q_goal,self.ends_color,raduis=self.goal_threshold,name=name)
-        draw_obstacles(map,self.obstacles_color,name=name)
-        return map
-    
-    def reset_map(self,name="RRT",draw_tree=True):
-        print("==> deleting old path")
-        self.map[:][:][:] = 255
-        draw_end_points(self.map,self.q_start,self.q_goal,self.ends_color,raduis=5,name=name)
-        draw_obstacles(self.map,self.obstacles_color,name=name)
-        if draw_tree:
-            redraw_tree(self.map,self.tree,color=(0,0,0),width=1,name=name)
+
     
     def extract_path(self,x_goal):
         path = []
@@ -164,20 +145,6 @@ class RRT:
         path.append((x_goal.parent.q,x_goal.q))
         return path
 
-    def draw_path(self,path,color=(255,0,0),width=2,name="RRT"):
-        for q1,q2 in path:
-            _,line = self.steer(q1,q2)
-            draw_line(self.map,line,color=color,width=width,name=name)
-            
-    def erase_path(self,path,color=(0,0,0),width=2,name="RRT"):
-        for q1,q2 in path:
-            _,line = self.steer(q1,q2)
-            delete_line(self.map,line,width=width,color=(255,255,255),name=name)
-            draw_line(self.map,line,color=color,width=1,name=name)   
-                    
-
-        return path
-    
     @staticmethod
     def tree_len(node):
         i = 0
@@ -188,43 +155,7 @@ class RRT:
             
         return i
 
-        
-        
-        
-        
-
-if __name__=="__main__":
-
-    # Initializing surface
-    map = np.ones((500,500,3), dtype=np.uint8)*255
     
-    #draw star and goal points
-    q_start={"x":100,"y":20,"theta":0.3,"delta":0.1,"beta":0.01}
-    q_goal={"x":350,"y":420,"theta":0,"delta":0,"beta":0}
-    star_color = (255,0,255)
-    goal_color = (0,0,255)
-    cv.circle(map,center=(q_start["y"],q_start["x"]),radius=5,color=star_color,thickness=-1)
-    cv.circle(map,center=(q_goal["y"],q_goal["x"]),radius=7,color=goal_color,thickness=-1)
-
-
-    #draw obstacles
-    obstacle_color = (0,255,0)
-    cv.rectangle(map,(255,255),(300,300),obstacle_color,thickness=-1)
-    cv.rectangle(map,(150,150),(200,200),obstacle_color,thickness=-1)
-    cv.rectangle(map,(100,300),(170,325),obstacle_color,thickness=-1)
-    cv.rectangle(map,(100,80),(150,120),obstacle_color,thickness=-1)
-    cv.rectangle(map,(10,80),(50,120),obstacle_color,thickness=-1)
-    cv.rectangle(map,(210,320),(240,350),obstacle_color,thickness=-1)
-    cv.circle(map,center=(400,60),radius=40,color=obstacle_color,thickness=-1)
-    cv.circle(map,center=(250,60),radius=40,color=obstacle_color,thickness=-1)
-
-
-
-    # Initializing RTT
-    rrt = RRT(map=map,q_start=q_start,q_goal=q_goal,goal_threshold=7, obstacles_color=obstacle_color)
-    #Build RRT
-    rrt.build(int(1e6))
-    input('Press ENTER to exit')
     
     
     
