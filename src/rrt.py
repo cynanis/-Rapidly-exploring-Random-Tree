@@ -62,10 +62,11 @@ class RRT:
                     #draw the new path 
                     self.draw_path(self.path,color=(255,0,0),width=2,name=name)
                     x_best = x_new
-                    
-            cv.imshow(name,self.map)
-            if cv.waitKey(1) == ord('q'):
-                break
+
+            if i%20 == 0:
+                cv.imshow(name,self.map)
+                if cv.waitKey(1) == ord('q'):
+                    break
             
         return self.tree
 

@@ -31,8 +31,9 @@ class RRTStar(RRT):
             if self.collision_free(line_n): 
                 # find list of x nodes that lie in the circle centerd at q_new
                 r = self.search_raduis(self.tree,self.rewire_radius)
-                X_near = self.near(self.tree,q_new,r)     
-                 #connect the x_new node to the near x_min=x_near node that result in a minimum-cost c_min path
+                X_near = self.near(self.tree,q_new,r)  
+                   
+                 #connect the x_new node to the near node "x_min=x_near"  which results in a minimum-cost c_min path
                 x_new = Node(q = q_new)
                 x_min = x_nearest
                 c_min = self.cost(x_nearest) + self.c(line_n)
@@ -54,11 +55,11 @@ class RRTStar(RRT):
                         
                 #rewrite the tree 
                 for x_near in X_near:
+                    #evaluate the x_near cost vs x_near through x_new cost
                     c_near = self.cost(x_near)
                     _,line_n2r = self.steer(x_new.q,x_near.q)
                     c_new = self.cost(x_new) + self.c(line_n2r) 
                     if self.collision_free(line_n2r):
-                        
                         #if near node achieve less cost change its parent 
                         if c_new < c_near:
                            self.rewrite(x_near,x_new,line_n2r,name)
@@ -67,24 +68,20 @@ class RRTStar(RRT):
                     if x_goal != None:
                         if self.cost(x_new) >= self.cost(x_goal):
                             continue
-                        
                     #erase prev path
                     self.erase_path(self.path,color=(0,0,0),width=2,name=name)
-                    
                     #extract new path
                     self.path = self.extract_path(x_new)
-
                     #draw new path
-                    print("===> new path cost: {:.3f}".format(self.cost(x_new)))
                     print("===> drawing new path")
                     self.draw_path(self.path,color=(255,0,0),width=2,name=name)
                     draw_point(self.map,self.q_goal,raduis=self.goal_threshold,width=self.goal_threshold,color=(255,0,0),name=name)
                     x_goal = x_new
 
-            cv.imshow(name,self.map)
-            if cv.waitKey(1) == ord('q'):
-                break
-        return self.tree            
+            if i %20 == 0:
+                cv.imshow(name,self.map)
+                if cv.waitKey(1) == ord('q'):
+                    break
               
     
     @staticmethod

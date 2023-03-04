@@ -8,14 +8,16 @@ from src.utils import *
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('-t', "--type", type=str, default='rrt',
                     help='rrt or rrt_star')
+parser.add_argument('-r', "--raduis", type=int, default=50,
+                    help='initial search raduis')
 args = parser.parse_args()
 
 # Initializing surface
-map_size = (450,450,3)
+map_size = (350,350,3)
 
 #draw star and goal points
-q_start={"x":100,"y":20,"theta":0.3,"delta":0.1,"beta":0.01}
-q_goal={"x":350,"y":370,"theta":0,"delta":0,"beta":0}
+q_start={"x":100,"y":35,"theta":0.3,"delta":0.1,"beta":0.01}
+q_goal={"x":320,"y":300,"theta":0,"delta":0,"beta":0}
 #goal color
 color = (255,0,0)
 #draw obstacles
@@ -25,11 +27,12 @@ rrt = None
 if args.type == "rrt":
     rrt = RRT(size=map_size,q_start=q_start,q_goal=q_goal,goal_threshold=7, obstacles_color=obstacle_color)
 elif args.type == "rrt_star":
-    rrt = RRTStar(size=map_size,q_start=q_start,q_goal=q_goal,goal_threshold=7, obstacles_color=obstacle_color)
+    rrt = RRTStar(size=map_size,q_start=q_start,q_goal=q_goal,goal_threshold=7,rewire_radius=args.raduis, obstacles_color=obstacle_color)
 elif args.type == "informed_rrt_star":
-    rrt = InformedRRTStar(size=map_size,q_start=q_start,q_goal=q_goal,goal_threshold=7, obstacles_color=obstacle_color)
+    rrt = InformedRRTStar(size=map_size,q_start=q_start,q_goal=q_goal,goal_threshold=7,rewire_radius=args.raduis, obstacles_color=obstacle_color)
 else:
     print("incorrect algorithm name")
+    exit()
 #Build RRT
 rrt.build(int(1e6))
 

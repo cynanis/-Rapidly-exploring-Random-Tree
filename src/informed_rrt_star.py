@@ -54,6 +54,7 @@ class InformedRRTStar(RRTStar):
                         
                 #rewrite the tree 
                 for x_near in X_near:
+                    #evaluate the x_near cost vs x_near through x_new cost
                     c_near = self.cost(x_near)
                     _,line_n2r = self.steer(x_new.q,x_near.q)
                     c_new = self.cost(x_new) + self.c(line_n2r) 
@@ -66,18 +67,14 @@ class InformedRRTStar(RRTStar):
                 #check goal region
                 if self.in_goal_region(x_new.q):
                     X_soln.add(x_new)
-                    
                     # get node goal with lowest cost
                     x_best,c_best = self.transverse_diameter(X_soln)
-                    
                     # if x_new is lowest cost node goal draw path
                     if x_best == x_new:
                         #erase prev path
-                        self.erase_path(self.path,color=(0,0,0),width=2,name=name)
-                        
+                        self.erase_path(self.path,color=(0,0,0),width=2,name=name)                   
                         #extract new path
                         self.path = self.extract_path(x_new)
-
                         #draw new path
                         print("===> new path cost: {:.3f}".format(self.cost(x_new)))
                         print("===> drawing new path")
@@ -86,9 +83,10 @@ class InformedRRTStar(RRTStar):
                         cmin, Q_center, _ = self.sample_config
                         draw_ellipse(self.map,self.q_start,self.q_goal,c_best,cmin,Q_center)
     
-                cv.imshow(name,self.map)
-                if cv.waitKey(1) == ord('q'):
-                    break
+                if i%20 ==0:
+                    cv.imshow(name,self.map)
+                    if cv.waitKey(1) == ord('q'):
+                        break
                 
 
     
