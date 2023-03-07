@@ -8,15 +8,17 @@ from .cfg import params
 import cv2 as cv
 
 class RRT:
-    def __init__(self,map,goal_threshold=8,name="RRT"):
+    def __init__(self,map,obstacle_clearence=5,goal_threshold=8,name="RRT"):
 
 
         self.goal_threshold = goal_threshold
+        self.obstacle_clearence = obstacle_clearence
         self.tree = Node(q = map.q_start,w=0,u=0)
         self.map = map
         self.name=name
         self.map_img = map.map_img
         self.path = []
+        
 
 
     def build(self,steps):
@@ -92,17 +94,38 @@ class RRT:
         return line[-1], line
 
     def collision_free(self,line):
-        for q in line:
+        for q in line[1:]:
             if not self.point_collision_free(q):
                 return False
         return True
     
     def point_collision_free(self,q):
         x, y = q["x"],q["y"]
-        if (x>0 and y>0) and x < self.map_img.shape[1] and y < self.map_img.shape[0]:
-            if not np.array_equal(self.map_img[y][x],self.map.obstacles_color):
-                return True
+        r = self.obstacle_clearence
+        
+        if self.map_img.shape[1] - r > x and self.map_img.shape[0] - r > y and x > r and y > r:
+            mask = np.reshape(self.map_img[y-r:y+r,x-r:x+r][:],(-1,3))
+            for a in mask:
+                if np.array_equal(a,self.map.obstacles_color):
+                    return False
+            return True
+            # print(self.map.obstacles_color in region)
+            # circle = self.points_in_circle_np(self.obstacle_clearence,x,y)
+            # for x_,y_ in circle:
+            #     if np.array_equal(self.map_img[y_][x_],self.map.obstacles_color):
+            #         return False
+            # return True
         return False
+    
+    @staticmethod
+    def points_in_circle_np(radius, x0=0, y0=0):
+        x_ = np.arange(x0 - radius + 1 , x0 + radius - 1, dtype=int)
+        y_ = np.arange(y0 - radius + 1 , y0 + radius - 1 , dtype=int)
+        x, y = np.where((x_[:,np.newaxis] - x0)**2 + (y_ - y0)**2 <= radius**2)
+        # x, y = np.where((np.hypot((x_-x0)[:,np.newaxis], y_-y0)<= radius)) # alternative implementation
+        for x, y in zip(x_[x], y_[y]):
+            yield x, y
+
         
     def in_goal_region(self,q):
       
@@ -114,7 +137,7 @@ class RRT:
     def ecludian(q_n, q_r):
         x1 , y1, theta1 = q_n["x"],q_n["y"],q_n["theta"]
         x2, y2, theta2 = q_r["x"], q_r["y"],q_r["theta"]
-        return ((x2-x1)**2 + (y2 - y1)**2 + 0.2*(theta2 - theta1)**2)**0.5 
+        return ((x2-x1)**2 + (y2 - y1)**2)**0.5 
 
     def cost(self,v):
         if v is None:

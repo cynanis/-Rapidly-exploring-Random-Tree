@@ -5,11 +5,10 @@ from .tree import Node
 from .rrt import RRT
 from .cfg import params
 
-
 class RRTStar(RRT):
-    def __init__(self,map,goal_threshold=8, rewire_radius = 6,  name="RRT*"):
+    def __init__(self,map,obstacle_clearence=3,goal_threshold=8, rewire_radius = 6,  name="RRT*"):
 
-        super().__init__(map,goal_threshold,name)
+        super().__init__(map,obstacle_clearence,goal_threshold,name)
         self.tree.add_weight(0)
         self.rewire_radius = rewire_radius
 

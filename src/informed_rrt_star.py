@@ -6,12 +6,12 @@ from .cfg import params
 import copy
 
 class InformedRRTStar(RRTStar):
-    def __init__(self,map,goal_threshold=8, rewire_radius = 6, name="Informed RRT*"):        
+    def __init__(self,map,obstacle_clearence=3,goal_threshold=8, rewire_radius = 6, name="Informed RRT*"):        
         """ 
             q_start : starting state {"x":x,"y":y,"theta"=theta,"delta":delta,"beta":beta}
             q_goal : goal state {"x":x,"y"=y,"theta"=theta,"delta":delta,"beta":beta}
         """
-        super().__init__(map,goal_threshold,rewire_radius,name)
+        super().__init__(map,obstacle_clearence,goal_threshold,rewire_radius,name)
         self.sample_config = self.hyperellipsoid_config()
         
     def build(self,steps):
