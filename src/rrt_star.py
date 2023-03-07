@@ -49,28 +49,13 @@ class RRTStar(RRT):
                         
                 #rewrite the tree 
                 for x_near in X_near:
-                    #evaluate the x_near cost vs x_near through x_new cost
-                    c_near = self.cost(x_near)
-                    _,line_n2r = self.steer(x_new.q,x_near.q)
-                    c_new = self.cost(x_new) + self.c(line_n2r) 
-                    if self.collision_free(line_n2r):
-                        #if near node achieve less cost change its parent 
-                        if c_new < c_near:
-                           self.rewrite(x_near,x_new,line_n2r)
+                    self.rewire(x_near,x_new)
                     
                 if self.in_goal_region(x_new.q):   
                     if x_goal != None:
                         if self.cost(x_new) >= self.cost(x_goal):
                             continue
-                    #erase prev path
-                    self.map.draw_point(self.map.q_goal,raduis=self.map.end_points_raduis,color=self.map.path_color)
-                    #erase old path
-                    self.map.erase_path(self.path,width=2)
-                    #extract the new path from new goal
-                    self.path = self.extract_path(x_new)   
-                    #draw the new path
-                    print("===> draw new path")
-                    self.map.draw_path(self.path,width=2)
+                    self.update_path(x_new)
                     x_goal = x_new
 
             if i%20 == 0:
@@ -103,8 +88,18 @@ class RRTStar(RRT):
         n = RRT.tree_len(tree) + 1
         r = max(min(rewire_raduis * np.sqrt((np.log(n) / n)),params["v_max"]*params["sample_time"]*params["step_samples"]),2)
         return r
+        
+    def rewire(self,x_near,x_new):
+        #evaluate the x_near cost vs x_near through x_new cost
+        c_near = self.cost(x_near)
+        _,line_n2r = self.steer(x_new.q,x_near.q)
+        c_new = self.cost(x_new) + self.c(line_n2r) 
+        if self.collision_free(line_n2r):
+            #if near node achieve less cost change its parent 
+            if c_new < c_near:
+                self.update_tree(x_near,x_new,line_n2r)
     
-    def rewrite(self,x_near,x_new,line_n2r,config=None,c_best=None):
+    def update_tree(self,x_near,x_new,line_n2r,config=None,c_best=None):
         #replace rewriten edges in path
         if (x_near.parent.q, x_near.q) in self.path:
             
@@ -141,3 +136,14 @@ class RRTStar(RRT):
 
             # draw the new x_near branch 
             self.map.draw_line(line_n2r,color=self.map.tree_color,width=1)
+    
+    def update_path(self,x_new):
+            #erase prev path
+            self.map.draw_point(self.map.q_goal,raduis=self.map.end_points_raduis,color=self.map.path_color)
+            #erase old path
+            self.map.erase_path(self.path,width=2)
+            #extract the new path from new goal
+            self.path = self.extract_path(x_new)   
+            #draw the new path
+            print("===> draw new path")
+            self.map.draw_path(self.path,width=2)

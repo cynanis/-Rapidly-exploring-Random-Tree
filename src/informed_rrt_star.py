@@ -19,7 +19,7 @@ class InformedRRTStar(RRTStar):
         X_soln = set()
         for i in range(steps):
             #the transverse diameter is cbest of the special hyperellipsoid
-            x_best, c_best = self.transverse_diameter(X_soln)
+            _ , c_best = self.transverse_diameter(X_soln)
             #get a random location sample in the map
             q_rand = self.sample(c_best)
             #find the nearest node to the random sample
@@ -48,41 +48,19 @@ class InformedRRTStar(RRTStar):
                 _,line_n = self.steer(x_min.q,x_new.q)
                 x_new.add_weight(self.c(line_n))
                 #add x_new node to the tree
-                x_min.add_child(x_new)                
-                #visulize the updated tree
+                x_min.add_child(x_new)      
+                          
                 self.map.draw_line(line_n,width=1,color=self.map.tree_color)
                         
                 #rewrite the tree 
                 for x_near in X_near:
-                    #evaluate the x_near cost vs x_near through x_new cost
-                    c_near = self.cost(x_near)
-                    _,line_n2r = self.steer(x_new.q,x_near.q)
-                    c_new = self.cost(x_new) + self.c(line_n2r) 
-                    if self.collision_free(line_n2r):
-                        
-                        #if near node achieve less cost change its parent 
-                        if c_new < c_near:
-                                self.rewrite(x_near,x_new,line_n2r,self.sample_config,c_best)
+                    self.rewire(x_near,x_new)
 
                 #check goal region
                 if self.in_goal_region(x_new.q):
                     X_soln.add(x_new)
-                    # get node goal with lowest cost
-                    x_best,c_best = self.transverse_diameter(X_soln)
-                    # if x_new is lowest cost node goal draw path
-                    if x_best == x_new:
-                        #erase prev path
-                        self.map.draw_point(self.map.q_goal,raduis=self.map.end_points_raduis,color=self.map.path_color)
-                        #erase old path
-                        self.map.erase_path(self.path,width=2)
-                        #extract the new path from new goal
-                        self.path = self.extract_path(x_new)   
-                        #draw the new path
-                        print("===> draw new path")
-                        self.map.draw_path(self.path,width=2)
-                        cmin, Q_center, _ = self.sample_config
-                        self.map.draw_ellipse(self.map.q_start,self.map.q_goal,c_best,cmin,Q_center)
-    
+                    self.update_path(X_soln,x_new)
+        
                 if i%20 == 0:
                     self.map.show_map(self.name)
                 
@@ -137,5 +115,22 @@ class InformedRRTStar(RRTStar):
                             [(self.map.q_start["y"]+self.map.q_goal["y"]) / 2.0], [0.0]])
             C = self.rotaion_to_world_frame()
             return (c_min,Q_center,C)
+        
+    def update_path(self,X_soln,x_new):
+        # get node goal with lowest cost
+        x_best,c_best = self.transverse_diameter(X_soln)
+        # if x_new is lowest cost node goal draw path
+        if x_best == x_new:
+            #erase prev path
+            self.map.draw_point(self.map.q_goal,raduis=self.map.end_points_raduis,color=self.map.path_color)
+            #erase old path
+            self.map.erase_path(self.path,width=2)
+            #extract the new path from new goal
+            self.path = self.extract_path(x_new)   
+            #draw the new path
+            print("===> draw new path")
+            self.map.draw_path(self.path,width=2)
+            cmin, Q_center, _ = self.sample_config
+            self.map.draw_ellipse(self.map.q_start,self.map.q_goal,c_best,cmin,Q_center)
     
   
