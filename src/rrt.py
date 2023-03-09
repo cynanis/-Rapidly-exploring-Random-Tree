@@ -2,8 +2,7 @@ import numpy as np
 from random import randint
 import random
 from .tree import Node
-from .model import BicycleModel
-from .control2d import steer
+from .control2d import Control2D
 from .cfg import params
 import cv2 as cv
 
@@ -83,7 +82,8 @@ class RRT:
 
     @staticmethod
     def steer(q_nearest, q_rand):
-        line = steer(q_nearest,q_rand)
+        cntrl = Control2D(q_init = q_nearest)
+        line = cntrl.steer(q_desired=q_rand,v_desired=params["v_max"],steps=params["step_samples"])
         return line[-1], line
 
     def collision_free(self,line):

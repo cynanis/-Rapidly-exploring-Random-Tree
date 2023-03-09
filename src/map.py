@@ -1,6 +1,7 @@
 import numpy as np
 import cv2 as cv
-from .control2d import steer
+from .control2d import Control2D
+from .cfg import params
 
 class Map:
     def __init__(self,size,q_start, q_goal,
@@ -48,16 +49,21 @@ class Map:
         cv.circle(self.map_img,center=(250,60),radius=40,color=color,thickness=-1)
         
     def draw_path(self,path,width=2):
+        cntrl = Control2D(path[0][0])
         for q1,q2 in path:
-            line = steer(q1,q2)
+            cntrl.update_state(q_state=q1)
+            line = cntrl.steer(q_desired=q2,v_desired=params["v_max"],steps=params["step_samples"])
             self.draw_line(line,color=self.path_color,width=width)
             
     def erase_path(self,path,width=2):
+        if len(path) == 0:
+            return
+        cntrl = Control2D(path[0][0])
         for q1,q2 in path:
-            line = steer(q1,q2)
+            cntrl.update_state(q_state=q1)
+            line = cntrl.steer(q_desired=q2,v_desired=params["v_max"],steps=params["step_samples"])
             self.draw_line(line,color=(255,255,255),width=width)   
             self.draw_line(line,color=self.tree_color,width=1)   
-        return path
         
     def draw_line(self,line,color,width=1):
         len_ = len(line)
