@@ -25,10 +25,10 @@ class InformedRRTStar(RRTStar):
             #find the nearest node to the random sample
             _,x_nearest = self.nearest_neighbor(self.tree,q_rand)
             #genertate a steering trajectory from nearest node to random sample
-            q_new, line_n  = self.steer(x_nearest.q,q_rand)
+            q_new, line_new  = self.steer(x_nearest.q,q_rand)
             
             #check for collision
-            if self.collision_free(line_n): 
+            if self.collision_free(line_new): 
                 x_new = Node(q_new)
 
                 # find list of x nodes that lie in the circle centerd at q_new
@@ -36,7 +36,7 @@ class InformedRRTStar(RRTStar):
                 X_near = self.near(self.tree,q_new,r)
                 
                  #connect x_new to x_near with minimal cost
-                self.connect(X_near,x_new,x_nearest)
+                self.connect(X_near,x_new,x_nearest,line_new)
                         
                 #rewire the tree 
                 for x_near in X_near:
