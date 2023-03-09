@@ -16,6 +16,7 @@ class RRT:
         self.map = map
         self.name=name
         self.map_img = map.map_img
+        self.cntrl = Control2D(q_init=map.q_start)
         self.path = []
         
 
@@ -80,10 +81,9 @@ class RRT:
         return min_dist,x_nearest
              
 
-    @staticmethod
-    def steer(q_nearest, q_rand):
-        cntrl = Control2D(q_init = q_nearest)
-        line = cntrl.steer(q_desired=q_rand,v_desired=params["v_max"],steps=params["step_samples"])
+    def steer(self,q_nearest, q_rand):
+        self.cntrl.update_state(q_state=q_nearest)
+        line = self.cntrl.steer(q_desired=q_rand,v_desired=params["v_max"],steps=params["step_samples"])
         return line[-1], line
 
     def collision_free(self,line):
@@ -102,23 +102,7 @@ class RRT:
                 if np.array_equal(a,self.map.obstacles_color):
                     return False
             return True
-            # print(self.map.obstacles_color in region)
-            # circle = self.points_in_circle_np(self.obstacle_clearence,x,y)
-            # for x_,y_ in circle:
-            #     if np.array_equal(self.map_img[y_][x_],self.map.obstacles_color):
-            #         return False
-            # return True
         return False
-    
-    @staticmethod
-    def points_in_circle_np(radius, x0=0, y0=0):
-        x_ = np.arange(x0 - radius + 1 , x0 + radius - 1, dtype=int)
-        y_ = np.arange(y0 - radius + 1 , y0 + radius - 1 , dtype=int)
-        x, y = np.where((x_[:,np.newaxis] - x0)**2 + (y_ - y0)**2 <= radius**2)
-        # x, y = np.where((np.hypot((x_-x0)[:,np.newaxis], y_-y0)<= radius)) # alternative implementation
-        for x, y in zip(x_[x], y_[y]):
-            yield x, y
-
         
     def in_goal_region(self,q):
       
@@ -126,8 +110,7 @@ class RRT:
             return True
         return False   
     
-    @staticmethod
-    def ecludian(q_n, q_r):
+    def ecludian(self,q_n, q_r):
         x1 , y1, theta1 = q_n["x"],q_n["y"],q_n["theta"]
         x2, y2, theta2 = q_r["x"], q_r["y"],q_r["theta"]
         return ((x2-x1)**2 + (y2 - y1)**2)**0.5 
@@ -172,13 +155,13 @@ class RRT:
         print("===> draw new path")
         self.map.draw_path(self.path,width=2)
 
-    @staticmethod
-    def tree_len(node):
+    
+    def tree_len(self,node):
         i = 0
         if node is not None:
             i += 1
         for node_ in node.children:
-            i += RRT.tree_len(node_)
+            i += self.tree_len(node_)
             
         return i
 

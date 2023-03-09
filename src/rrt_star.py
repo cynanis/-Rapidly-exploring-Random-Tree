@@ -62,8 +62,8 @@ class RRTStar(RRT):
                 self.map.show_map(self.name)
               
     
-    @staticmethod
-    def near(x,q,r):
+    
+    def near(self,x,q,r):
         """
         returns list of nodes lie in the cirlce centered at q with raduis r
 
@@ -76,16 +76,16 @@ class RRTStar(RRT):
             Xnear: list of near nodes
         """
         X_near = []
-        dist = RRT.ecludian(x.q,q)
+        dist = self.ecludian(x.q,q)
         if(dist < r):
             X_near.append(x)
         for x_ in x.children:
-            X_near.extend(RRTStar.near(x_,q,r))
+            X_near.extend(self.near(x_,q,r))
         return X_near
         
-    @staticmethod
-    def search_raduis(tree,rewire_raduis):
-        n = RRT.tree_len(tree) + 1
+    
+    def search_raduis(self,tree,rewire_raduis):
+        n = self.tree_len(tree) + 1
         r = max(min(rewire_raduis * np.sqrt((np.log(n) / n)),params["v_max"]*params["sample_time"]*params["step_samples"]),2)
         return r
         
