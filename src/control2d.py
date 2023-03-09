@@ -10,11 +10,10 @@ class Control2D:
         self.q_state = q_state    
         
     def forward(self, v, delta):
+        ## BICYCLE FORWARD MODEL
         #w steering angle rate  
         #v bicycle speed
         # ==================================
-
-        
         if v > 0:
             v = min(v,params["v_max"])  
         else:
@@ -31,12 +30,9 @@ class Control2D:
         yc  = yc + (v*np.sin(theta + beta))*params["sample_time"]
         theta = theta + (v*np.cos(beta)*np.tan(delta_)/params["L"]) * params["sample_time"]
         #delta = delta + w * params["sample_time"]
-
-
         beta = np.arctan(params["lr"] * np.tan(delta) / params["L"])
         # ==================================
         q_new = {"x":round(xc),"y":round(yc),"theta":theta,"delta":delta,"beta":beta}
-        #print("q_new: ",q_new)
         return q_new
 
     
@@ -47,14 +43,13 @@ class Control2D:
             xc,yc,theta_c = self.q_state["x"],self.q_state["y"],self.q_state["theta"]
             
             ### HEADING ERROR ###
-            
             #path equation aX + bY + c = 0 => Y = -a/b*X -c
             #path slop (Yf - Yi)/(Xi - Xf)
             path_slop = np.tan(theta)
 
             #heading of the path
             path_heading = theta
-            
+    
             #vehicle heading
             vehicle_heading = theta_c
 
