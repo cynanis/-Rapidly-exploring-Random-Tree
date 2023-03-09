@@ -97,7 +97,6 @@ class RRTStar(RRT):
         if self.collision_free(line_n2r):
             #if near node achieve less cost change its parent 
             if c_new < c_near:
-                print("before",x_near.parent)
                 self.update_tree(x_near,x_new,line_n2r)
                 
     def update_tree(self,x_near,x_new,line_n2r,config=None,c_best=None):
