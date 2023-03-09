@@ -45,14 +45,7 @@ class RRT:
                         if self.cost(x_new) >= self.cost(x_best):
                             continue
                     #draw path
-                    print("===> drawing new path")
-                    self.map.draw_point(self.map.q_goal,raduis=self.map.end_points_raduis,color=self.map.ends_color)
-                    #erase old path
-                    self.map.erase_path(self.path,width=2)
-                    #extract the new path from new goal
-                    self.path = self.extract_path(x_new)   
-                    #draw the new path 
-                    self.map.draw_path(self.path,width=2)
+                    self.update_path(x_new)
                     x_best = x_new
 
             if i%20 == 0:
@@ -167,6 +160,17 @@ class RRT:
         path.extend(self.extract_path(x_goal.parent))
         path.append((x_goal.parent.q,x_goal.q))
         return path
+
+    def update_path(self,x_new):
+        #erase prev path
+        self.map.draw_point(self.map.q_goal,raduis=self.map.end_points_raduis,color=self.map.path_color)
+        #erase old path
+        self.map.erase_path(self.path,width=2)
+        #extract the new path from new goal
+        self.path = self.extract_path(x_new)   
+        #draw the new path
+        print("===> draw new path")
+        self.map.draw_path(self.path,width=2)
 
     @staticmethod
     def tree_len(node):
