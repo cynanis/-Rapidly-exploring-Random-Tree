@@ -23,31 +23,16 @@ class RRTStar(RRT):
             q_new, line_n = self.steer(x_nearest.q,q_rand)
             #check for collision
             if self.collision_free(line_n): 
+                x_new = Node(q_new)
+
                 # find list of x nodes that lie in the circle centerd at q_new
                 r = self.search_raduis(self.tree,self.rewire_radius)
                 X_near = self.near(self.tree,q_new,r)  
-                   
-                 #connect the x_new node to the near node "x_min=x_near"  which results in a minimum-cost c_min path
-                x_new = Node(q = q_new)
-                x_min = x_nearest
-                c_min = self.cost(x_nearest) + self.c(line_n)
-                for x_near in X_near:
-                    _,line_n = self.steer(x_near.q,x_new.q)
-                    c_new = self.cost(x_near) + self.c(line_n)
-                    if self.collision_free(line_n):
-                        if c_new < c_min:
-                            x_min = x_near
-                            c_min = c_new
                 
-                #update the the new node weight
-                _,line_n = self.steer(x_min.q,x_new.q)
-                x_new.add_weight(self.c(line_n))
-                #add x_new node to the tree
-                x_min.add_child(x_new)                
-                #visulize the updated tree
-                self.map.draw_line(line_n,color=self.map.tree_color,width=1)
+                 #connect x_new to x_near with minimal cost
+                self.connect(X_near,x_new,x_nearest)
                         
-                #rewrite the tree 
+                #rewire the tree 
                 for x_near in X_near:
                     self.rewire(x_near,x_new)
                     
@@ -88,7 +73,26 @@ class RRTStar(RRT):
         n = self.tree_len(tree) + 1
         r = max(min(rewire_raduis * np.sqrt((np.log(n) / n)),params["v_max"]*params["sample_time"]*params["step_samples"]),2)
         return r
+    
+    def connect(self,X_near,x_new,x_nearest):
+        x_min = x_nearest
+        c_min = self.cost(x_nearest) + self.c(line_n)
+        for x_near in X_near:
+            _,line_n = self.steer(x_near.q,x_new.q)
+            c_new = self.cost(x_near) + self.c(line_n)
+            if self.collision_free(line_n):
+                if c_new < c_min:
+                    x_min = x_near
+                    c_min = c_new
         
+        #update the the new node weight
+        _,line_n = self.steer(x_min.q,x_new.q)
+        x_new.add_weight(self.c(line_n))
+        #add x_new node to the tree
+        x_min.add_child(x_new)                
+        #visulize the updated tree
+        self.map.draw_line(line_n,color=self.map.tree_color,width=1)
+            
     def rewire(self,x_near,x_new):
         #evaluate the x_near cost vs x_near through x_new cost
         c_near = self.cost(x_near)
