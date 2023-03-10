@@ -17,11 +17,11 @@ parser.add_argument('-r', "--raduis", type=int, default=50,
 args = parser.parse_args()
 
 # Initializing surface
-map_size = (350,350,3)
+map_size = (330,340,3)
 
 #draw star and goal points
 q_start={"x":100,"y":35,"theta":0.3,"delta":0.1,"beta":0.01}
-q_goal={"x":320,"y":300,"theta":0,"delta":0,"beta":0}
+q_goal={"x":250,"y":250,"theta":0,"delta":0,"beta":0}
 
 map = Map(size = map_size, q_start= q_start, q_goal=q_goal,
                         obstacles_color=(0, 255, 0), end_points_colors= (255, 0, 255), 
