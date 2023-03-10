@@ -71,7 +71,7 @@ class RRTStar(RRT):
     
     def search_raduis(self,tree,rewire_raduis):
         n = self.tree_len(tree) + 1
-        r = max(min(rewire_raduis * np.sqrt((np.log(n) / n)),params["v_max"]*params["sample_time"]*params["step_samples"]),2)
+        r = max(min(rewire_raduis * np.sqrt((np.log(n) / n)),params["v_max"]*params["sample_time"]*params["step_samples"]),4)
         return r
     
     def connect(self,X_near,x_new,x_nearest,line_new):
@@ -92,7 +92,7 @@ class RRTStar(RRT):
         #visulize the updated tree
         self.map.draw_line(line_new,color=self.map.tree_color,width=1)
             
-    def rewire(self,x_near,x_new):
+    def rewire(self,x_near,x_new,config=None,x_goal=None):
         #evaluate the x_near cost vs x_near through x_new cost
         c_near = self.cost(x_near)
         _,line_n2r = self.steer(x_new.q,x_near.q)
@@ -100,9 +100,9 @@ class RRTStar(RRT):
         if self.collision_free(line_n2r):
             #if near node achieve less cost change its parent 
             if c_new < c_near:
-                self.update_tree(x_near,x_new,line_n2r)
+                self.update_tree(x_near,x_new,line_n2r,config,x_goal)
                 
-    def update_tree(self,x_near,x_new,line_n2r,config=None,c_best=None):
+    def update_tree(self,x_near,x_new,line_n2r,config=None,x_goal=None):
         #replace rewriten edges in path
         if (x_near.parent.q, x_near.q) in self.path:
             
@@ -124,8 +124,9 @@ class RRTStar(RRT):
             #draw the new path
             self.map.draw_path(self.path,width=2)
             if config != None:
+                
                 cmin, Q_center, _ = config
-                self.map.draw_ellipse(self.map.q_start,self.map.q_goal,c_best,cmin,Q_center)
+                self.map.draw_ellipse(self.map.q_start,self.map.q_goal,self.cost(x_goal),cmin,Q_center)
         else:
             #old brach
             _,line_r = self.steer(x_near.parent.q,x_near.q)

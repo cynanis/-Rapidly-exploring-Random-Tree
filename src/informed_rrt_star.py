@@ -15,11 +15,10 @@ class InformedRRTStar(RRTStar):
         self.sample_config = self.hyperellipsoid_config()
         
     def build(self,steps):
-
         X_soln = set()
         for i in range(steps):
             #the transverse diameter is cbest of the special hyperellipsoid
-            _ , c_best = self.transverse_diameter(X_soln)
+            x_goal , c_best = self.transverse_diameter(X_soln)
             #get a random location sample in the map
             q_rand = self.sample(c_best)
             #find the nearest node to the random sample
@@ -40,7 +39,7 @@ class InformedRRTStar(RRTStar):
                         
                 #rewire the tree 
                 for x_near in X_near:
-                    self.rewire(x_near,x_new)
+                    self.rewire(x_near,x_new,self.sample_config,x_goal)
 
                 #check goal region
                 if self.in_goal_region(x_new.q):
