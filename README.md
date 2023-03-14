@@ -8,18 +8,23 @@ This repository implements some common RRT algorithms used in robotics ( in our 
   python 3.10
 
 ### Instalation
-`pip install -r requirements.txt`
+```
+pip install -r requirements.txt
+```
 
 ## Test
-##### RRT:   
-`py test.py -t rrt `
-<br />
-##### RRT*:
-`py test.py -r rrt_star`
-<br />
-##### Informed RRT*:
-`py test.py -r informed_rrt_star`
-<br />
+
+
+```
+RRT:
+py test.py -t rrt
+
+RRT*:
+py test.py -r rrt_star
+
+Informed RRT*:
+py test.py -r informed_rrt_star
+```
 
 ![RRT](https://github.com/cynanis/Rapidly-exploring-Random-Tree/blob/main/pictures/rrt.PNG)
 
